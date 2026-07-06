@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: postgres
+
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: appdb
+      POSTGRES_USER: appuser
+      POSTGRES_PASSWORD: Ompl@65482*
+
+    volumes:
+      - ./data:/var/lib/postgresql/data
+
+    networks:
+      - homelab
+
+networks:
+  homelab:
+    external: true

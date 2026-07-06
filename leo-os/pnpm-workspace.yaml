@@ -1,0 +1,10 @@
+packages:
+  - "packages/*"
+  - "apps/*"
+overrides:
+  react: 19.1.0
+  react-dom: 19.1.0
+allowBuilds:
+  dtrace-provider: true
+  esbuild: true
+  sharp: true

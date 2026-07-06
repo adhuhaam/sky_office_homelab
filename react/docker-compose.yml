@@ -1,0 +1,19 @@
+services:
+  react:
+    image: nginx:alpine
+    container_name: react-app
+    restart: unless-stopped
+
+    ports:
+      - "3000:80"
+
+    volumes:
+      - ./app:/usr/share/nginx/html:ro
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+
+    networks:
+      - homelab
+
+networks:
+  homelab:
+    external: true

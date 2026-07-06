@@ -1,0 +1,15 @@
+services:
+  leo-api:
+    build:
+      context: ../leo-os
+      dockerfile: apps/api/Dockerfile
+    container_name: leo-api
+    restart: unless-stopped
+    env_file:
+      - .env
+    networks:
+      - homelab
+
+networks:
+  homelab:
+    external: true

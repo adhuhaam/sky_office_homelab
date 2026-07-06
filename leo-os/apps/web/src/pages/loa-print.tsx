@@ -1,0 +1,348 @@
+import { useEffect, useState } from "react";
+import { Link, useRoute } from "wouter";
+import { ArrowLeft, Printer } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { apiFetch, type LoaEntry, ApiError } from "@/lib/api";
+import { BrandImage } from "@/components/brand-image";
+
+function formatDate(v: string | null | undefined): string {
+  if (!v) return "—";
+  const s = v.trim();
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return `${m[3]}/${m[2]}/${m[1]}`;
+  return s;
+}
+
+function FieldRow({
+  label,
+  value,
+}: {
+  label: string;
+  value: string | null | undefined;
+}) {
+  return (
+    <div className="print-field-row flex flex-wrap gap-x-1 text-[11px] leading-snug py-[3px]">
+      <span className="font-semibold text-slate-800 shrink-0">{label}:</span>
+      <span className="text-slate-700">{(value ?? "").trim() || "—"}</span>
+    </div>
+  );
+}
+
+function SectionHeader({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="print-section-header text-[11.5px] font-bold text-slate-900 mt-5 mb-1 border-b border-slate-200 pb-0.5">
+      {children}
+    </p>
+  );
+}
+
+export function LoaPrintPage() {
+  const [, params] = useRoute("/loa/:id/print");
+  const id = params?.id ? Number(params.id) : 0;
+
+  const [loa, setLoa] = useState<LoaEntry | null>(null);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!id || Number.isNaN(id)) {
+      setError("Invalid LOA id");
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setLoading(true);
+    setError("");
+
+    apiFetch<LoaEntry>(`/loa/public/${id}`)
+      .then((data) => {
+        if (!cancelled) setLoa(data);
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setError(err instanceof ApiError ? err.message : "Failed to load LOA");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  useEffect(() => {
+    const tag = document.querySelector<HTMLMetaElement>('meta[name="viewport"]');
+    const prev = tag?.getAttribute("content") ?? null;
+    const content = "width=device-width, initial-scale=1.0";
+    if (tag) {
+      tag.setAttribute("content", content);
+    } else {
+      const m = document.createElement("meta");
+      m.name = "viewport";
+      m.content = content;
+      document.head.appendChild(m);
+    }
+    return () => {
+      if (tag && prev !== null) tag.setAttribute("content", prev);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!loa?.candidateName) return undefined;
+    const prev = document.title;
+    document.title = `LOA-${loa.candidateName}`;
+    return () => {
+      document.title = prev;
+    };
+  }, [loa?.candidateName]);
+
+  useEffect(() => {
+    const css = `
+      @page { size: A4 portrait; margin: 10mm; }
+      @media print {
+        html, body {
+          background: white !important;
+          width: 100% !important;
+          margin: 0 !important;
+          padding: 0 !important;
+        }
+        .no-print { display: none !important; }
+        .print-outer {
+          background: white !important;
+          padding: 0 !important;
+          margin: 0 !important;
+          min-height: 0 !important;
+          width: 100% !important;
+        }
+        .print-shell {
+          box-shadow: none !important;
+          border: none !important;
+          padding: 0 !important;
+          max-width: 100% !important;
+          width: 100% !important;
+          margin: 0 !important;
+        }
+        .print-page {
+          padding: 0 !important;
+          font-size: 9pt !important;
+          line-height: 1.35 !important;
+        }
+        .print-letterhead {
+          margin-bottom: 4pt !important;
+        }
+        .print-letterhead img {
+          display: block !important;
+          width: 100% !important;
+          max-width: 100% !important;
+          height: auto !important;
+          max-height: 52pt !important;
+          object-fit: contain !important;
+          object-position: center !important;
+          background: transparent !important;
+          background-color: transparent !important;
+        }
+        .print-title {
+          margin: 5pt 0 !important;
+        }
+        .print-title h1 {
+          font-size: 10pt !important;
+          padding: 3pt 12pt !important;
+        }
+        .print-section-header {
+          font-size: 9pt !important;
+          margin-top: 7pt !important;
+          margin-bottom: 1pt !important;
+          padding-bottom: 1pt !important;
+          break-after: avoid !important;
+          page-break-after: avoid !important;
+        }
+        .print-field-row {
+          padding-top: 0 !important;
+          padding-bottom: 0 !important;
+          line-height: 1.3 !important;
+        }
+        .print-signature {
+          margin-top: 6pt !important;
+        }
+        .print-signature img {
+          max-height: 28pt !important;
+          max-width: 120pt !important;
+          background: transparent !important;
+          background-color: transparent !important;
+        }
+      }
+    `;
+    const style = document.createElement("style");
+    style.textContent = css;
+    document.head.appendChild(style);
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+
+  if (error) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#eef1f5] px-6 text-center text-sm text-red-600">
+        {error}
+      </div>
+    );
+  }
+
+  if (loading || !loa) {
+    return (
+      <div className="max-w-3xl mx-auto p-6 space-y-3">
+        <Skeleton className="h-10" />
+        <Skeleton className="h-[500px]" />
+      </div>
+    );
+  }
+
+  const letterheadImage = loa.letterheadImage ?? null;
+  const signatureImage = loa.signatureImage ?? null;
+  const signatoryName = loa.signatoryName ?? "";
+  const signatoryDesignation = loa.signatoryDesignation ?? "";
+  const companyName = loa.companyName ?? "";
+  const companyAddress = loa.companyAddress ?? "";
+  const companyEmail = loa.companyEmail ?? "";
+  const companyPhone = loa.companyPhone ?? "";
+  const companyCountry = loa.companyCountry ?? "";
+  const companyReg = loa.companyRegistrationNumber ?? "";
+
+  return (
+    <div className="print-outer bg-slate-100 min-h-screen py-2 sm:py-6">
+      <div className="no-print max-w-[820px] mx-auto px-3 sm:px-4 mb-2 sm:mb-4 flex items-center justify-between">
+        <Link href="/loa">
+          <Button variant="outline" size="sm" className="gap-2">
+            <ArrowLeft className="h-4 w-4" /> Back
+          </Button>
+        </Link>
+        <Button
+          size="sm"
+          className="gap-2"
+          onClick={() => window.print()}
+          data-testid="button-print"
+        >
+          <Printer className="h-4 w-4" /> Print / Save as PDF
+        </Button>
+      </div>
+
+      <div className="print-shell max-w-[820px] mx-auto bg-white text-slate-900 shadow-lg">
+        <div className="print-page px-4 py-6 sm:p-12 text-[11.5px] leading-relaxed font-sans">
+          {letterheadImage ? (
+            <div className="print-letterhead flex justify-center mb-4">
+              <BrandImage
+                src={letterheadImage}
+                alt={companyName}
+                className="max-h-28 w-full max-w-full"
+              />
+            </div>
+          ) : (
+            <div className="text-center mb-4">
+              <p className="text-[15px] font-bold uppercase tracking-wide text-slate-900">
+                {companyName}
+              </p>
+              {companyAddress && (
+                <p className="text-[11px] text-slate-600 mt-0.5 whitespace-pre-line">
+                  {companyAddress}
+                </p>
+              )}
+              {(companyPhone || companyEmail) && (
+                <p className="text-[11px] text-slate-600 mt-0.5">
+                  {[companyPhone, companyEmail].filter(Boolean).join(" · ")}
+                </p>
+              )}
+            </div>
+          )}
+
+          <div className="print-title text-center my-5">
+            <h1 className="text-[15px] font-bold uppercase tracking-widest text-slate-900 border-y border-slate-300 py-2 inline-block px-6">
+              Letter of Appointment
+            </h1>
+          </div>
+
+          <SectionHeader>1. Details of Employer;</SectionHeader>
+          <FieldRow label="Name" value={companyName} />
+          <FieldRow label="Address" value={companyAddress} />
+          <FieldRow label="Contact Details / Email address" value={companyEmail} />
+          <FieldRow label="Phone Number" value={companyPhone} />
+          <FieldRow label="Country of origin" value={companyCountry} />
+          <FieldRow label="Registration Number / ID Card" value={companyReg} />
+
+          <SectionHeader>2. Details of Employee;</SectionHeader>
+          <FieldRow label="Name" value={loa.candidateName} />
+          <FieldRow label="Permanent Address" value={loa.candidateAddress} />
+          <FieldRow label="Nationality" value={loa.candidateNationality} />
+          <FieldRow label="Date of Birth" value={formatDate(loa.candidateDateOfBirth)} />
+          <FieldRow label="Passport Number" value={loa.candidatePassportNumber} />
+          <FieldRow
+            label="Emergency Contact Details (name and contact number)"
+            value={loa.candidateEmergencyContact}
+          />
+
+          <SectionHeader>4. Details of Employment;</SectionHeader>
+          <FieldRow label="Job Title / Occupation" value={loa.jobTitle} />
+          <FieldRow label="Work Type" value={loa.workType} />
+          <FieldRow label="Basic Salary (USD)" value={loa.basicSalary} />
+          <FieldRow
+            label="Date of Salary payment"
+            value={loa.salaryPaymentDate ?? "End of each month"}
+          />
+          <FieldRow label="Work site" value={loa.workSite} />
+          <FieldRow
+            label="Date of Commence"
+            value={loa.dateOfCommence ?? "Date of Arrival"}
+          />
+          <FieldRow
+            label="Job Description"
+            value={
+              loa.jobDescription ??
+              "Job Description will be given the time of signing the contract"
+            }
+          />
+          <FieldRow
+            label="Working Hours"
+            value={loa.workingHours ?? "09:00 to 17:00 Saturday to Sunday"}
+          />
+          <FieldRow
+            label="Work Status (Permanent / Contract)"
+            value={loa.workStatus ?? "Contract based"}
+          />
+          <FieldRow
+            label="Contract Duration (if Contracted employee)"
+            value={
+              loa.contractDuration ??
+              "Contract will be for 2 years, Probation period is 3 months"
+            }
+          />
+
+          <SectionHeader>Details of Signatory;</SectionHeader>
+          <FieldRow label="Name" value={signatoryName} />
+          <FieldRow label="Designation" value={signatoryDesignation} />
+
+          <div className="print-signature mt-8">
+            {signatureImage ? (
+              <BrandImage
+                src={signatureImage}
+                alt="Signature"
+                className="max-h-16 max-w-[180px] mb-1"
+              />
+            ) : (
+              <div className="border-b border-slate-400 w-48 mb-1 h-8" />
+            )}
+            <p className="text-[11px] font-semibold text-slate-900">{signatoryName}</p>
+            {signatoryDesignation && (
+              <p className="text-[10.5px] text-slate-600">{signatoryDesignation}</p>
+            )}
+            <p className="text-[11px] text-slate-700 mt-1">
+              Date: {formatDate(loa.signatureDate)}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

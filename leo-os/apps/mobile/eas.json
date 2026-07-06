@@ -1,0 +1,40 @@
+{
+  "cli": {
+    "version": ">= 16.0.0",
+    "appVersionSource": "remote",
+    "requireCommit": false
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "http://100.126.222.96",
+        "EXPO_PUBLIC_WEB_URL": "http://100.126.222.96",
+        "EXPO_NO_METRO_WORKSPACE_ROOT": "1"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "http://100.126.222.96",
+        "EXPO_PUBLIC_WEB_URL": "http://100.126.222.96",
+        "EXPO_NO_METRO_WORKSPACE_ROOT": "1"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_API_URL": "http://100.126.222.96",
+        "EXPO_PUBLIC_WEB_URL": "http://100.126.222.96",
+        "EXPO_NO_METRO_WORKSPACE_ROOT": "1"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

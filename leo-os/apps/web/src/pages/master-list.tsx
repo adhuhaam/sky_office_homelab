@@ -1,0 +1,1400 @@
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useLocation } from "wouter";
+import {
+  Search,
+  Filter,
+  Loader2,
+  Users,
+  X,
+  Eye,
+  Pencil,
+  Trash2,
+  ShieldCheck,
+  ShieldX,
+  ExternalLink,
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { LoadErrorBanner } from "@/components/load-error-banner";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  apiFetch,
+  passportQuery,
+  ApiError,
+  type Passport,
+  type Company,
+  type Client,
+  type LoaEntry,
+} from "@/lib/api";
+import {
+  buildXpatCardSrc,
+  buildXpatPhotoSrc,
+  formatXpatDate,
+  isWpInvalid,
+  isWpValid,
+  useXpatWorkPermit,
+} from "@/lib/xpat";
+import { WpStatusBadge } from "@/components/xpat-panel";
+import { EmploymentField } from "@/components/employment-field";
+import { useCompanyLoaOptions } from "@/hooks/use-company-loa-options";
+import { useHasRole } from "@/lib/auth";
+import { formatEmergencyContact } from "@/lib/emergency-contact";
+
+const DEMONYM_MAP: Record<string, string> = {
+  bangladeshi: "bangladesh",
+  indian: "india",
+  nepali: "nepal",
+  nepalese: "nepal",
+  maldivian: "maldives",
+  pakistani: "pakistan",
+  "sri lankan": "sri lanka",
+  srilankan: "sri lanka",
+};
+
+function normalizeNationality(raw: string | null | undefined): string {
+  if (!raw) return "";
+  const lower = raw.toLowerCase().trim();
+  return DEMONYM_MAP[lower] ?? lower;
+}
+
+type StatusFilter =
+  | "all"
+  | "processing"
+  | "completed"
+  | "failed"
+  | "applied"
+  | "approved"
+  | "ticket_issued"
+  | "arrived"
+  | "handedover"
+  | "return_back_from_worksite"
+  | "incomplete"
+  | "cancelled"
+  | "terminated"
+  | "lost"
+  | "employed";
+type NationalityFilter = "all" | "bangladesh" | "india" | "nepal";
+type AllocationFilter = string;
+
+interface Row {
+  passport: Passport;
+  companyId: number | null;
+  companyName: string | null;
+  loaCount: number;
+}
+
+const STATUS_META: Record<string, { label: string; cls: string }> = {
+  processing: { label: "Processing", cls: "text-blue-700 bg-blue-100 dark:bg-blue-900/40 dark:text-blue-300" },
+  completed: { label: "OCR Done", cls: "text-teal-700 bg-teal-100 dark:bg-teal-900/40 dark:text-teal-300" },
+  failed: { label: "Failed", cls: "text-red-700 bg-red-100 dark:bg-red-900/40 dark:text-red-300" },
+  applied: { label: "Applied", cls: "text-purple-700 bg-purple-100 dark:bg-purple-900/40 dark:text-purple-300" },
+  approved: { label: "Approved", cls: "text-green-700 bg-green-100 dark:bg-green-900/40 dark:text-green-300" },
+  ticket_issued: { label: "Ticket Issued", cls: "text-cyan-700 bg-cyan-100 dark:bg-cyan-900/40 dark:text-cyan-300" },
+  arrived: { label: "Arrived", cls: "text-emerald-700 bg-emerald-100 dark:bg-emerald-900/40 dark:text-emerald-300" },
+  handedover: { label: "Handed Over", cls: "text-indigo-700 bg-indigo-100 dark:bg-indigo-900/40 dark:text-indigo-300" },
+  return_back_from_worksite: { label: "Returned", cls: "text-orange-700 bg-orange-100 dark:bg-orange-900/40 dark:text-orange-300" },
+  incomplete: { label: "Incomplete", cls: "text-yellow-700 bg-yellow-100 dark:bg-yellow-900/40 dark:text-yellow-300" },
+  cancelled: { label: "Cancelled", cls: "text-slate-600 bg-slate-100 dark:bg-slate-800 dark:text-slate-400" },
+  terminated: { label: "Terminated", cls: "text-rose-700 bg-rose-100 dark:bg-rose-900/40 dark:text-rose-300" },
+  lost: { label: "Lost", cls: "text-red-800 bg-red-100 dark:bg-red-900/40 dark:text-red-400" },
+  employed: { label: "Employed", cls: "text-green-800 bg-green-200 dark:bg-green-900/50 dark:text-green-200" },
+};
+
+function StatusBadge({ status }: { status: string }) {
+  const m = STATUS_META[status] ?? { label: status, cls: "text-muted-foreground bg-muted" };
+  return (
+    <span className={`text-[10px] font-semibold px-2 py-1 rounded whitespace-nowrap ${m.cls}`}>
+      {m.label.toUpperCase()}
+    </span>
+  );
+}
+
+function PassportRow({
+  row,
+  onEdit,
+  onDelete,
+  canDelete,
+}: {
+  row: Row;
+  onEdit: () => void;
+  onDelete: () => void;
+  canDelete: boolean;
+}) {
+  const { passport, companyName } = row;
+  const [, navigate] = useLocation();
+
+  const wp = passport.workPermitNumber ?? null;
+  const pp = passport.passportNumber ?? null;
+  const hasXpat = !!(wp && pp);
+  const { data: xpat, loading: xpatLoading } = useXpatWorkPermit(
+    hasXpat ? wp : null,
+    hasXpat ? pp : null,
+  );
+
+  const photoSrc = buildXpatPhotoSrc(xpat?.photoUrl);
+
+  const initials = (passport.fullName ?? "?")
+    .split(" ")
+    .slice(0, 2)
+    .map((w: string) => w[0] ?? "")
+    .join("")
+    .toUpperCase();
+
+  return (
+    <TableRow data-testid={`row-master-${passport.id}`}>
+      <TableCell className="w-12 pr-2">
+        {!hasXpat ? (
+          <div className="h-9 w-9 rounded-full bg-muted border flex items-center justify-center">
+            <span className="text-[11px] font-medium text-muted-foreground">—</span>
+          </div>
+        ) : xpatLoading ? (
+          <Skeleton className="h-9 w-9 rounded-full" />
+        ) : photoSrc ? (
+          <>
+            <img
+              src={photoSrc}
+              alt={passport.fullName ?? ""}
+              className="h-9 w-9 rounded-full object-cover border"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = "none";
+                (target.nextElementSibling as HTMLElement | null)?.classList.remove("hidden");
+              }}
+            />
+            <div className="h-9 w-9 rounded-full bg-muted border flex items-center justify-center hidden">
+              <span className="text-[10px] font-bold text-muted-foreground">{initials}</span>
+            </div>
+          </>
+        ) : (
+          <div className="h-9 w-9 rounded-full bg-muted border flex items-center justify-center">
+            <span className="text-[10px] font-bold text-muted-foreground">{initials}</span>
+          </div>
+        )}
+      </TableCell>
+
+      <TableCell>
+        <p className="font-medium uppercase text-sm leading-tight">{passport.fullName || "—"}</p>
+        <p className="font-mono text-[11px] text-muted-foreground leading-tight">
+          {passport.passportNumber || "—"}
+          {wp && <span className="text-muted-foreground/60"> · {wp}</span>}
+          {passport.jobTitle && (
+            <span className="font-sans text-indigo-600 dark:text-indigo-400 font-medium">
+              {" · "}
+              {passport.jobTitle}
+            </span>
+          )}
+        </p>
+        <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">
+          {companyName ? (
+            <span className="font-medium text-foreground/80">{companyName}</span>
+          ) : (
+            <span className="italic">No company</span>
+          )}
+          {" → "}
+          {passport.clientName ? (
+            <span>{passport.clientName}</span>
+          ) : (
+            <span className="italic">Unallocated</span>
+          )}
+        </p>
+        <div className="mt-1">
+          {!hasXpat ? (
+            <span className="text-[10px] text-muted-foreground">No WP# — Xpat data unavailable</span>
+          ) : xpatLoading ? (
+            <div className="flex gap-1.5 items-center">
+              <Skeleton className="h-3.5 w-14 rounded" />
+              <Skeleton className="h-3 w-16 rounded" />
+            </div>
+          ) : xpat ? (
+            <div className="flex flex-wrap items-center gap-1.5">
+              <WpStatusBadge xpat={xpat} />
+              {xpat.workPermitExpiry && (
+                <span className="text-[10px] text-muted-foreground">
+                  Exp:{" "}
+                  <span className="font-medium text-foreground/80">
+                    {formatXpatDate(xpat.workPermitExpiry)}
+                  </span>
+                </span>
+              )}
+            </div>
+          ) : (
+            <span className="text-[10px] text-muted-foreground">—</span>
+          )}
+        </div>
+      </TableCell>
+
+      <TableCell>
+        <StatusBadge status={passport.status} />
+      </TableCell>
+
+      <TableCell>
+        <div className="flex gap-1.5 justify-end">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs gap-1"
+            onClick={() => navigate(`/employees/${passport.id}`)}
+            data-testid={`button-view-master-${passport.id}`}
+          >
+            <Eye className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">View</span>
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs gap-1"
+            onClick={onEdit}
+            data-testid={`button-edit-master-${passport.id}`}
+          >
+            <Pencil className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Edit</span>
+          </Button>
+          {canDelete && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-xs gap-1 text-destructive hover:text-destructive"
+              onClick={onDelete}
+              data-testid={`button-delete-master-${passport.id}`}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Delete</span>
+            </Button>
+          )}
+        </div>
+      </TableCell>
+    </TableRow>
+  );
+}
+
+export function MasterListPage() {
+  const canDelete = useHasRole("admin", "superuser");
+  const { toast } = useToast();
+
+  const [search, setSearch] = useState("");
+  const [nationalityFilter, setNationalityFilter] = useState<NationalityFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [allocationFilter, setAllocationFilter] = useState<AllocationFilter>("all");
+
+  const [passports, setPassports] = useState<Passport[]>([]);
+  const [loas, setLoas] = useState<LoaEntry[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const [editPassport, setEditPassport] = useState<Passport | null>(null);
+  const [deletePassportId, setDeletePassportId] = useState<number | null>(null);
+
+  const passportParams = useMemo(
+    () =>
+      passportQuery({
+        ...(search ? { search } : {}),
+        ...(nationalityFilter !== "all" ? { nationality: nationalityFilter } : {}),
+        ...(statusFilter !== "all" ? { status: statusFilter } : {}),
+        ...(allocationFilter.startsWith("client:")
+          ? { clientId: allocationFilter.slice("client:".length) }
+          : allocationFilter === "unallocated"
+            ? { clientId: "none" }
+            : allocationFilter.startsWith("company:")
+              ? { companyId: allocationFilter.slice("company:".length) }
+              : allocationFilter === "no-loa"
+                ? { companyId: "none" }
+                : {}),
+      }),
+    [search, nationalityFilter, statusFilter, allocationFilter],
+  );
+
+  const loadLoasCompaniesClients = useCallback(async () => {
+    try {
+      const [loaData, companyData, clientData] = await Promise.all([
+        apiFetch<LoaEntry[]>("/loa"),
+        apiFetch<Company[]>("/companies"),
+        apiFetch<Client[]>("/clients"),
+      ]);
+      setLoas(loaData);
+      setCompanies(companyData);
+      setClients(clientData);
+    } catch (err) {
+      const message = err instanceof ApiError ? err.message : "Failed to load reference data";
+      setLoadError(message);
+      toast({
+        title: "Failed to load reference data",
+        description: message,
+        variant: "destructive",
+      });
+    }
+  }, [toast]);
+
+  const loadPassports = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError(null);
+    try {
+      const data = await apiFetch<Passport[]>(`/passports${passportParams}`);
+      setPassports(data);
+    } catch (err) {
+      const message = err instanceof ApiError ? err.message : "Failed to load candidates";
+      setLoadError(message);
+      toast({
+        title: "Failed to load candidates",
+        description: message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [passportParams, toast]);
+
+  const reloadAll = useCallback(async () => {
+    await Promise.all([loadLoasCompaniesClients(), loadPassports()]);
+  }, [loadLoasCompaniesClients, loadPassports]);
+
+  useEffect(() => {
+    loadLoasCompaniesClients();
+  }, [loadLoasCompaniesClients]);
+
+  useEffect(() => {
+    loadPassports();
+  }, [loadPassports]);
+
+  const latestLoaByPassport = useMemo(() => {
+    const m = new Map<number, { companyId: number | null; companyName: string | null; count: number }>();
+    for (const loa of loas) {
+      if (loa.passportId == null) continue;
+      const existing = m.get(loa.passportId);
+      if (existing) {
+        existing.count += 1;
+      } else {
+        m.set(loa.passportId, {
+          companyId: loa.companyId ?? null,
+          companyName: loa.companyName ?? null,
+          count: 1,
+        });
+      }
+    }
+    return m;
+  }, [loas]);
+
+  const rows: Row[] = useMemo(() => {
+    return passports.map((p) => {
+      const link = latestLoaByPassport.get(p.id);
+      return {
+        passport: p,
+        companyId: p.companyId ?? null,
+        companyName: p.companyName ?? null,
+        loaCount: link?.count ?? 0,
+      };
+    });
+  }, [passports, latestLoaByPassport]);
+
+  const activeFilterCount =
+    (search ? 1 : 0) +
+    (nationalityFilter !== "all" ? 1 : 0) +
+    (statusFilter !== "all" ? 1 : 0) +
+    (allocationFilter !== "all" ? 1 : 0);
+
+  const clearFilters = () => {
+    setSearch("");
+    setNationalityFilter("all");
+    setStatusFilter("all");
+    setAllocationFilter("all");
+  };
+
+  const handleDelete = async () => {
+    if (!deletePassportId) return;
+    setDeleting(true);
+    try {
+      await apiFetch(`/passports/${deletePassportId}`, { method: "DELETE" });
+      toast({ title: "Candidate deleted" });
+      setDeletePassportId(null);
+      await loadPassports();
+    } catch {
+      toast({ title: "Failed to delete", variant: "destructive" });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleSaved = () => {
+    loadPassports();
+    loadLoasCompaniesClients();
+  };
+
+  return (
+    <div className="max-w-7xl mx-auto space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-2">
+            <Users className="h-6 w-6 text-primary" />
+            Master List &amp; Records
+          </h1>
+          <p className="text-muted-foreground mt-1 text-sm">
+            Every candidate in the system — passport details, allocation, work permit, agent. Search,
+            filter, edit, or remove.
+          </p>
+        </div>
+        <div className="flex gap-4 text-sm">
+          <span className="text-muted-foreground">
+            Showing <strong className="text-foreground">{rows.length}</strong> of{" "}
+            <strong className="text-foreground">{passports.length}</strong>
+          </span>
+        </div>
+      </div>
+
+      {loadError && (
+        <LoadErrorBanner message={loadError} onRetry={() => void reloadAll()} retrying={isLoading} />
+      )}
+
+      <Card>
+        <CardHeader className="py-4 border-b">
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center md:justify-between">
+              <div className="relative w-full md:w-96">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by name or passport number..."
+                  className="pl-8"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  data-testid="input-search-master"
+                />
+              </div>
+              <div className="grid grid-cols-2 md:flex gap-2">
+                <Select value={allocationFilter} onValueChange={setAllocationFilter}>
+                  <SelectTrigger className="md:w-[220px]" data-testid="select-allocation-filter">
+                    <Filter className="w-4 h-4 mr-2" />
+                    <SelectValue placeholder="Allocation / Company" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All allocations</SelectItem>
+                    <SelectItem value="unallocated">— Unallocated —</SelectItem>
+                    {clients.length > 0 && (
+                      <div className="px-2 pt-2 pb-1 text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+                        Clients (allocation)
+                      </div>
+                    )}
+                    {clients.map((c) => (
+                      <SelectItem key={`client-${c.id}`} value={`client:${c.id}`}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                    {companies.length > 0 && (
+                      <div className="px-2 pt-2 pb-1 text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+                        Companies
+                      </div>
+                    )}
+                    <SelectItem value="no-loa">— No company assigned —</SelectItem>
+                    {companies.map((c) => (
+                      <SelectItem key={`company-${c.id}`} value={`company:${c.id}`}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select
+                  value={nationalityFilter}
+                  onValueChange={(v) => setNationalityFilter(v as NationalityFilter)}
+                >
+                  <SelectTrigger className="md:w-[160px]" data-testid="select-nationality-filter">
+                    <SelectValue placeholder="Nationality" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Nationalities</SelectItem>
+                    <SelectItem value="bangladesh">Bangladesh</SelectItem>
+                    <SelectItem value="india">India</SelectItem>
+                    <SelectItem value="nepal">Nepal</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
+                  <SelectTrigger className="md:w-[140px]" data-testid="select-status-filter">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="processing">Processing</SelectItem>
+                    <SelectItem value="failed">Failed</SelectItem>
+                    <SelectItem value="completed">OCR Done</SelectItem>
+                    <SelectItem value="applied">Applied</SelectItem>
+                    <SelectItem value="approved">Approved</SelectItem>
+                    <SelectItem value="ticket_issued">Ticket Issued</SelectItem>
+                    <SelectItem value="arrived">Arrived</SelectItem>
+                    <SelectItem value="handedover">Handed Over</SelectItem>
+                    <SelectItem value="return_back_from_worksite">Returned</SelectItem>
+                    <SelectItem value="employed">Employed</SelectItem>
+                    <SelectItem value="incomplete">Incomplete</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                    <SelectItem value="terminated">Terminated</SelectItem>
+                    <SelectItem value="lost">Lost</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {activeFilterCount > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearFilters}
+                    className="md:w-auto"
+                    data-testid="button-clear-filters"
+                  >
+                    <X className="w-4 h-4 mr-1" /> Clear
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-12"></TableHead>
+                  <TableHead>Candidate</TableHead>
+                  <TableHead>OCR</TableHead>
+                  <TableHead className="w-[100px] text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  Array.from({ length: 6 }).map((_, i) => (
+                    <TableRow key={i}>
+                      {Array.from({ length: 4 }).map((_, j) => (
+                        <TableCell key={j}>
+                          <div className="h-5 w-20 bg-muted animate-pulse rounded" />
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : rows.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="h-32 text-center text-muted-foreground">
+                      {passports.length === 0
+                        ? "No candidates yet — upload a passport from the Process Document page."
+                        : "No candidates match your filters."}
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  rows.map((row) => (
+                    <PassportRow
+                      key={row.passport.id}
+                      row={row}
+                      onEdit={() => setEditPassport(row.passport)}
+                      onDelete={() => setDeletePassportId(row.passport.id)}
+                      canDelete={canDelete}
+                    />
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {editPassport && (
+        <EditCandidateDialog
+          passport={editPassport}
+          open={!!editPassport}
+          onOpenChange={(o) => !o && setEditPassport(null)}
+          onSaved={handleSaved}
+        />
+      )}
+
+      <AlertDialog open={!!deletePassportId} onOpenChange={(o) => !o && setDeletePassportId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this candidate?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes the candidate&apos;s passport record. Any Letters of Appointment
+              already generated for them keep their snapshot of the details and are not affected.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              data-testid="button-confirm-delete-master"
+            >
+              {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
+
+function EditCandidateDialog({
+  passport,
+  open,
+  onOpenChange,
+  onSaved,
+}: {
+  passport: Passport;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSaved: () => void;
+}) {
+  const { toast } = useToast();
+  const [saving, setSaving] = useState(false);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [existingLoa, setExistingLoa] = useState<LoaEntry | null>(null);
+
+  const wp = passport.workPermitNumber ?? null;
+  const pp = passport.passportNumber ?? null;
+  const hasXpat = !!(wp && pp);
+  const { data: xpat, loading: xpatLoading } = useXpatWorkPermit(
+    hasXpat ? wp : null,
+    hasXpat ? pp : null,
+  );
+
+  const photoSrc = buildXpatPhotoSrc(xpat?.photoUrl);
+  const cardSrc = buildXpatCardSrc(wp, pp);
+
+  const [form, setForm] = useState({
+    fullName: passport.fullName || "",
+    passportNumber: passport.passportNumber || "",
+    nationality: normalizeNationality(passport.nationality),
+    dateOfBirth: passport.dateOfBirth || "",
+    dateOfIssue: passport.dateOfIssue || "",
+    dateOfExpiry: passport.dateOfExpiry || "",
+    address: passport.address || "",
+    emergencyContactName: passport.emergencyContactName || "",
+    emergencyContactPhone: passport.emergencyContactPhone || "",
+    companyId: passport.companyId != null ? String(passport.companyId) : "",
+    clientId: passport.clientId != null ? String(passport.clientId) : "",
+    workPermitNumber: passport.workPermitNumber || "",
+    agent: passport.agent || "",
+    jobTitle: "",
+    workType: "",
+    workSite: "",
+    agencySalary: passport.agencySalary ?? "",
+    clientSalary: passport.clientSalary ?? "",
+    agentRate: passport.agentRate ?? "",
+    employeeType: passport.employeeType ?? "casual",
+  });
+
+  useEffect(() => {
+    if (!open) return;
+    setForm({
+      fullName: passport.fullName || "",
+      passportNumber: passport.passportNumber || "",
+      nationality: normalizeNationality(passport.nationality),
+      dateOfBirth: passport.dateOfBirth || "",
+      dateOfIssue: passport.dateOfIssue || "",
+      dateOfExpiry: passport.dateOfExpiry || "",
+      address: passport.address || "",
+      companyId: passport.companyId != null ? String(passport.companyId) : "",
+      clientId: passport.clientId != null ? String(passport.clientId) : "",
+      workPermitNumber: passport.workPermitNumber || "",
+      agent: passport.agent || "",
+      jobTitle: "",
+      workType: "",
+      workSite: "",
+      agencySalary: passport.agencySalary ?? "",
+      clientSalary: passport.clientSalary ?? "",
+      agentRate: passport.agentRate ?? "",
+      employeeType: passport.employeeType ?? "casual",
+    });
+  }, [passport, open]);
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    Promise.all([
+      apiFetch<Client[]>("/clients"),
+      apiFetch<Company[]>("/companies"),
+      apiFetch<LoaEntry[]>(`/loa?passportId=${passport.id}`),
+    ])
+      .then(([clientData, companyData, loaData]) => {
+        if (cancelled) return;
+        setClients(clientData);
+        setCompanies(companyData);
+        const loa = loaData[0] ?? null;
+        setExistingLoa(loa);
+        if (loa) {
+          setForm((prev) => ({
+            ...prev,
+            jobTitle: loa.jobTitle ?? "",
+            workType: loa.workType ?? "",
+            workSite: loa.workSite ?? "",
+          }));
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          toast({ title: "Failed to load edit data", variant: "destructive" });
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [passport.id, open, toast]);
+
+  const selectedCompanyId = form.companyId ? Number(form.companyId) : undefined;
+  const { jobTitleOpts, workTypeOpts, workSiteOpts } = useCompanyLoaOptions(selectedCompanyId);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const {
+      companyId,
+      clientId,
+      jobTitle,
+      workType,
+      workSite,
+      workPermitNumber,
+      agent,
+      agencySalary,
+      clientSalary,
+      agentRate,
+      employeeType,
+      ...rest
+    } = form;
+
+    setSaving(true);
+    try {
+      await apiFetch(`/passports/${passport.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          ...rest,
+          companyId: companyId === "" ? null : Number(companyId),
+          clientId: clientId === "" ? null : Number(clientId),
+          workPermitNumber: workPermitNumber.trim() || null,
+          agent: agent.trim() || null,
+          agencySalary: agencySalary.trim() || null,
+          clientSalary: clientSalary.trim() || null,
+          agentRate: agentRate.trim() || null,
+          employeeType: employeeType as "casual" | "recruitment" | "organization_employed",
+        }),
+      });
+
+      if (existingLoa) {
+        try {
+          await apiFetch(`/loa/${existingLoa.id}`, {
+            method: "PATCH",
+            body: JSON.stringify({
+              jobTitle: jobTitle.trim() || undefined,
+              workType: workType.trim() || undefined,
+              workSite: workSite.trim() || undefined,
+              candidateEmergencyContact:
+                formatEmergencyContact(rest.emergencyContactName, rest.emergencyContactPhone) ||
+                undefined,
+            }),
+          });
+        } catch {
+          toast({ title: "LOA fields failed to save", variant: "destructive" });
+          setSaving(false);
+          return;
+        }
+      }
+
+      toast({ title: "Candidate updated" });
+      onSaved();
+      onOpenChange(false);
+    } catch {
+      toast({ title: "Failed to update", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const initials = (passport.fullName ?? "?")
+    .split(" ")
+    .slice(0, 2)
+    .map((w: string) => w[0] ?? "")
+    .join("")
+    .toUpperCase();
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[640px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Edit Candidate</DialogTitle>
+          <DialogDescription>
+            Update passport details, company, employment terms, and allocation.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="flex items-center gap-4 p-3 rounded-lg bg-muted/50 border">
+          {!hasXpat ? (
+            <>
+              <div className="h-14 w-14 rounded-full bg-muted border-2 flex items-center justify-center flex-shrink-0">
+                <span className="text-lg font-medium text-muted-foreground">—</span>
+              </div>
+              <div className="flex-1 space-y-1 min-w-0">
+                <p className="text-[11px] text-muted-foreground">
+                  No work permit number on record — add one above to load Xpat immigration data.
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  WP Status: <span className="font-medium">—</span> · Expiry:{" "}
+                  <span className="font-medium">—</span>
+                </p>
+              </div>
+            </>
+          ) : xpatLoading ? (
+            <>
+              <Skeleton className="h-14 w-14 rounded-full flex-shrink-0" />
+              <div className="space-y-1.5 flex-1">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-3 w-32" />
+              </div>
+            </>
+          ) : (
+            <>
+              {photoSrc ? (
+                <img
+                  src={photoSrc}
+                  alt={passport.fullName ?? ""}
+                  className="h-14 w-14 rounded-full object-cover border-2 border-background shadow flex-shrink-0"
+                  onError={(e) => {
+                    const t = e.target as HTMLImageElement;
+                    t.style.display = "none";
+                    (t.nextElementSibling as HTMLElement | null)?.classList.remove("hidden");
+                  }}
+                />
+              ) : null}
+              <div
+                className={`h-14 w-14 rounded-full bg-background border-2 flex items-center justify-center flex-shrink-0 ${photoSrc ? "hidden" : ""}`}
+              >
+                <span className="text-sm font-bold text-muted-foreground">{initials}</span>
+              </div>
+              <div className="flex-1 space-y-1 min-w-0">
+                {xpat ? (
+                  <>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {isWpValid(xpat.isValid) && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-green-700 bg-green-100 dark:bg-green-900/40 dark:text-green-300 px-2 py-0.5 rounded">
+                          <ShieldCheck className="h-3 w-3" /> {xpat.workPermitStateName ?? "Valid"}
+                        </span>
+                      )}
+                      {isWpInvalid(xpat.isValid) && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-700 bg-red-100 dark:bg-red-900/40 dark:text-red-300 px-2 py-0.5 rounded">
+                          <ShieldX className="h-3 w-3" /> {xpat.workPermitStateName ?? "Invalid"}
+                        </span>
+                      )}
+                      {xpat.isValid == null && xpat.workPermitStateName && (
+                        <span className="text-[11px] font-semibold text-muted-foreground bg-muted px-2 py-0.5 rounded">
+                          {xpat.workPermitStateName}
+                        </span>
+                      )}
+                      {xpat.workPermitExpiry && (
+                        <span className="text-[11px] text-muted-foreground">
+                          Expires:{" "}
+                          <span className="font-medium text-foreground">
+                            {formatXpatDate(xpat.workPermitExpiry)}
+                          </span>
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground truncate">
+                      {xpat.occupationName ?? "—"} · {xpat.employerName ?? "—"}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-[11px] text-muted-foreground">
+                      WP Status: <span className="font-medium">—</span>
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      Expiry: <span className="font-medium">—</span>
+                    </p>
+                  </>
+                )}
+              </div>
+              {xpat?.verifyUrl && (
+                <a
+                  href={xpat.verifyUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-shrink-0"
+                >
+                  <Button variant="ghost" size="icon" className="h-7 w-7">
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </Button>
+                </a>
+              )}
+            </>
+          )}
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="space-y-3">
+            <p className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
+              Passport
+            </p>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5 col-span-2">
+                <Label>Full Name</Label>
+                <Input
+                  value={form.fullName}
+                  onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+                  className="uppercase font-mono"
+                  data-testid="input-edit-fullname"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Passport Number</Label>
+                <Input
+                  value={form.passportNumber}
+                  onChange={(e) => setForm({ ...form, passportNumber: e.target.value })}
+                  className="uppercase font-mono"
+                  data-testid="input-edit-passport-number"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Nationality</Label>
+                <Select
+                  value={form.nationality}
+                  onValueChange={(v) => setForm({ ...form, nationality: v })}
+                >
+                  <SelectTrigger data-testid="select-edit-nationality">
+                    <SelectValue placeholder="Select nationality" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="bangladesh">Bangladesh</SelectItem>
+                    <SelectItem value="india">India</SelectItem>
+                    <SelectItem value="nepal">Nepal</SelectItem>
+                    <SelectItem value="maldives">Maldives</SelectItem>
+                    <SelectItem value="pakistan">Pakistan</SelectItem>
+                    <SelectItem value="sri lanka">Sri Lanka</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Date of Birth</Label>
+                <Input
+                  value={form.dateOfBirth}
+                  onChange={(e) => setForm({ ...form, dateOfBirth: e.target.value })}
+                  placeholder="YYYY-MM-DD or DD/MM/YYYY"
+                  data-testid="input-edit-dob"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Date of Issue</Label>
+                <Input
+                  value={form.dateOfIssue}
+                  onChange={(e) => setForm({ ...form, dateOfIssue: e.target.value })}
+                  placeholder="YYYY-MM-DD or DD/MM/YYYY"
+                  data-testid="input-edit-issue"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Date of Expiry</Label>
+                <Input
+                  value={form.dateOfExpiry}
+                  onChange={(e) => setForm({ ...form, dateOfExpiry: e.target.value })}
+                  placeholder="YYYY-MM-DD or DD/MM/YYYY"
+                  data-testid="input-edit-expiry"
+                />
+              </div>
+              <div className="space-y-1.5 col-span-2">
+                <Label>Address</Label>
+                <Input
+                  value={form.address}
+                  onChange={(e) => setForm({ ...form, address: e.target.value })}
+                  data-testid="input-edit-address"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Emergency Contact Name</Label>
+                <Input
+                  value={form.emergencyContactName}
+                  onChange={(e) => setForm({ ...form, emergencyContactName: e.target.value })}
+                  placeholder="e.g. Jane Doe"
+                  data-testid="input-edit-emergency-name"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Emergency Contact Phone</Label>
+                <Input
+                  value={form.emergencyContactPhone}
+                  onChange={(e) => setForm({ ...form, emergencyContactPhone: e.target.value })}
+                  placeholder="e.g. +880-123-456789"
+                  data-testid="input-edit-emergency-phone"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-3 border-t pt-4">
+            <p className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
+              Company &amp; Employment
+            </p>
+            <div className="space-y-1.5">
+              <Label>Company</Label>
+              <Select
+                value={form.companyId === "" ? "__none__" : form.companyId}
+                onValueChange={(v) => setForm({ ...form, companyId: v === "__none__" ? "" : v })}
+              >
+                <SelectTrigger data-testid="select-edit-company">
+                  <SelectValue placeholder="Select recruiting company" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">— None —</SelectItem>
+                  {companies.map((c) => (
+                    <SelectItem key={c.id} value={String(c.id)}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {existingLoa && (
+              <div className="grid grid-cols-2 gap-4 pt-1">
+                <EmploymentField
+                  label="Job Title"
+                  value={form.jobTitle}
+                  onChange={(v) => setForm({ ...form, jobTitle: v })}
+                  options={jobTitleOpts}
+                  testId="edit-job-title"
+                />
+                <EmploymentField
+                  label="Work Type"
+                  value={form.workType}
+                  onChange={(v) => setForm({ ...form, workType: v })}
+                  options={workTypeOpts}
+                  testId="edit-work-type"
+                />
+                <EmploymentField
+                  label="Work Site"
+                  value={form.workSite}
+                  onChange={(v) => setForm({ ...form, workSite: v })}
+                  options={workSiteOpts}
+                  testId="edit-work-site"
+                  className="col-span-2"
+                />
+              </div>
+            )}
+            {!existingLoa && (
+              <p className="text-[11px] text-muted-foreground">
+                No LOA exists for this candidate yet — employment terms are set when the LOA is
+                created.
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-3 border-t pt-4">
+            <p className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
+              Employee Type
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {(
+                [
+                  { value: "casual", label: "Casual", detail: "Profit = billing − salary" },
+                  {
+                    value: "recruitment",
+                    label: "Recruitment",
+                    detail: "Profit = agent amt − client rate",
+                  },
+                  {
+                    value: "organization_employed",
+                    label: "Org. Employed",
+                    detail: "Profit = amount billed",
+                  },
+                ] as { value: string; label: string; detail: string }[]
+              ).map((opt) => {
+                const active = form.employeeType === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setForm({ ...form, employeeType: opt.value })}
+                    className={`flex flex-col items-center rounded-lg border-2 p-2 text-center transition-colors ${
+                      active
+                        ? "border-primary bg-primary/8 text-primary"
+                        : "border-border bg-card text-muted-foreground hover:border-primary/40"
+                    }`}
+                  >
+                    <span
+                      className={`text-xs font-semibold ${active ? "text-primary" : "text-foreground"}`}
+                    >
+                      {opt.label}
+                    </span>
+                    <span className="text-[9px] mt-0.5 leading-tight">{opt.detail}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="space-y-3 border-t pt-4">
+            <p className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
+              Salary Rates
+            </p>
+            <div className="grid grid-cols-2 gap-4">
+              {form.employeeType !== "recruitment" && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Employee Salary (MVR/day)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={form.agencySalary}
+                    onChange={(e) => setForm({ ...form, agencySalary: e.target.value })}
+                  />
+                  <p className="text-[10px] text-muted-foreground">Daily rate paid to the employee</p>
+                </div>
+              )}
+              {form.employeeType === "recruitment" && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Agent Amount (MVR, one-time)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={form.agentRate}
+                    onChange={(e) => setForm({ ...form, agentRate: e.target.value })}
+                  />
+                  <p className="text-[10px] text-muted-foreground">
+                    One-time recruitment fee received from the client
+                  </p>
+                </div>
+              )}
+              <div className="space-y-1.5">
+                <Label className="text-xs">
+                  {form.employeeType === "recruitment"
+                    ? "Client Rate (MVR, one-time)"
+                    : "Client Billing Rate (MVR/day)"}
+                </Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={form.clientSalary}
+                  onChange={(e) => setForm({ ...form, clientSalary: e.target.value })}
+                />
+                <p className="text-[10px] text-muted-foreground">What you charge the client</p>
+              </div>
+            </div>
+            {(() => {
+              const clientRate = Number(form.clientSalary || 0);
+              if (clientRate <= 0) return null;
+              let cost = 0;
+              let label = "";
+              if (form.employeeType === "casual") {
+                cost = Number(form.agencySalary || 0);
+                label = "Daily margin (billing − salary)";
+              } else if (form.employeeType === "recruitment") {
+                const agentAmount = Number(form.agentRate || 0);
+                label = "One-time profit (agent amount − client rate)";
+                const clientCost = Number(form.clientSalary || 0);
+                const recruitProfit = agentAmount - clientCost;
+                const recruitColor =
+                  recruitProfit > 0
+                    ? "text-emerald-600"
+                    : recruitProfit < 0
+                      ? "text-destructive"
+                      : "text-muted-foreground";
+                return (
+                  <div className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2">
+                    <span className="text-xs text-muted-foreground">{label}</span>
+                    <span
+                      className={`text-sm font-semibold tabular-nums font-mono ${recruitColor}`}
+                    >
+                      {recruitProfit >= 0 ? "+" : ""}
+                      {recruitProfit.toLocaleString("en-US", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                      &nbsp;MVR
+                    </span>
+                  </div>
+                );
+              } else {
+                return null;
+              }
+              const margin = clientRate - cost;
+              const color =
+                margin > 0
+                  ? "text-emerald-600"
+                  : margin < 0
+                    ? "text-destructive"
+                    : "text-muted-foreground";
+              return (
+                <div className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2">
+                  <span className="text-xs text-muted-foreground">{label}</span>
+                  <span className={`text-sm font-semibold tabular-nums font-mono ${color}`}>
+                    {margin >= 0 ? "+" : ""}
+                    {margin.toLocaleString("en-US", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                    &nbsp;MVR
+                  </span>
+                </div>
+              );
+            })()}
+          </div>
+
+          <div className="space-y-3 border-t pt-4">
+            <p className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
+              Allocation
+            </p>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5 col-span-2">
+                <Label>Allocated Client</Label>
+                <Select
+                  value={form.clientId === "" ? "__none__" : form.clientId}
+                  onValueChange={(v) => setForm({ ...form, clientId: v === "__none__" ? "" : v })}
+                >
+                  <SelectTrigger data-testid="select-edit-client">
+                    <SelectValue placeholder="Where is this candidate allocated?" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">— Unallocated —</SelectItem>
+                    {clients.map((c) => (
+                      <SelectItem key={c.id} value={String(c.id)}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {clients.length === 0 && (
+                  <p className="text-[11px] text-muted-foreground">
+                    No clients yet — add one from the Clients page first.
+                  </p>
+                )}
+              </div>
+              <div className="space-y-1.5">
+                <Label>Work Permit Number</Label>
+                <Input
+                  value={form.workPermitNumber}
+                  onChange={(e) => setForm({ ...form, workPermitNumber: e.target.value })}
+                  className="font-mono"
+                  data-testid="input-edit-work-permit"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Agent</Label>
+                <Input
+                  value={form.agent}
+                  onChange={(e) => setForm({ ...form, agent: e.target.value })}
+                  data-testid="input-edit-agent"
+                />
+              </div>
+            </div>
+          </div>
+
+          {hasXpat && xpat && (
+            <div className="space-y-3 border-t pt-4">
+              <p className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
+                Xpat / Immigration Information
+              </p>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+                {(
+                  [
+                    ["First Name", xpat.firstName],
+                    ["Middle Name", xpat.middleName],
+                    ["Last Name", xpat.lastName],
+                    ["Gender", xpat.gender],
+                    ["Date of Birth", xpat.dateOfBirth],
+                    ["Nationality", xpat.nationality],
+                    ["ISO Code", xpat.isoAlpha3CountryCode],
+                    ["Contact", xpat.contactNumber],
+                    ["Occupation", xpat.occupationName],
+                    ["WP Status", xpat.workPermitStateName],
+                    ["WP Issued", xpat.workPermitIssuedDate],
+                    ["WP Expiry", xpat.workPermitExpiry],
+                    ["Employer", xpat.employerName],
+                    ["Employer #", xpat.employerNumber],
+                    ["Employer Contact", xpat.employerContactNumber],
+                  ] as [string, string | null | undefined][]
+                ).map(([label, value]) => (
+                  <div key={label} className="space-y-0.5">
+                    <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+                      {label}
+                    </p>
+                    <p className="font-medium">
+                      {value || <span className="text-muted-foreground">—</span>}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              {xpat.verifyUrl && (
+                <a
+                  href={xpat.verifyUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  View on eGov Xpat MV
+                </a>
+              )}
+              {cardSrc && (
+                <div className="pt-1">
+                  <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mb-1.5">
+                    Work Permit Card
+                  </p>
+                  <img
+                    src={cardSrc}
+                    alt="Work Permit Card"
+                    className="rounded border w-full max-w-sm object-contain"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = "none";
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={saving} data-testid="button-save-candidate">
+              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+

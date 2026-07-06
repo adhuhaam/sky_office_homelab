@@ -1,0 +1,62 @@
+# Leo OS production stack
+# LAN: https://192.168.18.150/ | Tailscale: http://100.126.222.96/
+# Internal upstream for host nginx: 127.0.0.1:3000
+services:
+  postgres:
+    image: postgres:17
+    container_name: postgres
+    restart: unless-stopped
+    env_file:
+      - ./postgresql/.env
+    environment:
+      POSTGRES_DB: appdb
+      POSTGRES_USER: appuser
+    volumes:
+      - ./postgresql/data:/var/lib/postgresql/data
+    networks:
+      - homelab
+
+  leo-api:
+    build:
+      context: ./leo-os
+      dockerfile: apps/api/Dockerfile
+    container_name: leo-api
+    restart: unless-stopped
+    env_file:
+      - ./api/.env
+    depends_on:
+      - postgres
+    networks:
+      - homelab
+
+  react:
+    image: nginx:alpine
+    container_name: react-app
+    restart: unless-stopped
+    volumes:
+      - ./react/app:/usr/share/nginx/html:ro
+      - ./react/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - leo-api
+    networks:
+      - homelab
+
+  leo-proxy:
+    image: nginx:alpine
+    container_name: leo-proxy
+    restart: unless-stopped
+    ports:
+      - "192.168.18.150:80:80"
+      - "192.168.18.150:443:443"
+      - "100.126.222.96:80:80"
+    volumes:
+      - ./infra/nginx/leo-os-docker.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./infra/certs:/etc/nginx/ssl:ro
+    depends_on:
+      - react
+    networks:
+      - homelab
+
+networks:
+  homelab:
+    external: true

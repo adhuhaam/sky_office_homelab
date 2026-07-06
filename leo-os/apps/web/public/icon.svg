@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="LEO OS">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2d8f7f"/>
+      <stop offset="100%" stop-color="#1a5c52"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <path fill="#ffffff" d="M148 168h72v176h-72zm124 0h72l56 96 56-96h72L404 344H308z"/>
+  <circle cx="184" cy="128" r="28" fill="#fbbf24"/>
+</svg>

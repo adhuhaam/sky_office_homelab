@@ -1,0 +1,17 @@
+{
+  "name": "@leo/api-client-react",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b --noEmit"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "@tanstack/react-query": "^5.81.5"
+  }
+}
