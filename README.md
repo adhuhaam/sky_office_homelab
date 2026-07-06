@@ -1,15 +1,26 @@
 <div align="center">
 
-# 🏢 Sky Office Homelab
+<img src="https://img.shields.io/badge/🏢_Sky_Office-Official_Homelab-0f172a?style=for-the-badge&labelColor=1e293b" alt="Sky Office Homelab" />
 
-**Official repository for Sky Office — employment agency operations platform**
+<br /><br />
+
+# Sky Office Homelab
+
+**Official repository · Employment agency operations platform**
+
+*Passport onboarding → work permits → payroll → billing — one system for Leo Employment Services*
+
+<br />
 
 [![Node](https://img.shields.io/badge/Node-22+-339933?style=flat-square&logo=node.js&logoColor=white)](https://nodejs.org/)
-[![pnpm](https://img.shields.io/badge/pnpm-workspace-F69220?style=flat-square&logo=pnpm&logoColor=white)](https://pnpm.io/)
-[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square&logo=docker&logoColor=white)](https://docs.docker.com/compose/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-4169E1?style=flat-square&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev/)
+[![Vite](https://img.shields.io/badge/Vite-PWA-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vitejs.dev/)
 [![Expo](https://img.shields.io/badge/Expo-Mobile-000020?style=flat-square&logo=expo&logoColor=white)](https://expo.dev/)
+[![Express](https://img.shields.io/badge/Express-API-000000?style=flat-square&logo=express&logoColor=white)](https://expressjs.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-4169E1?style=flat-square&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square&logo=docker&logoColor=white)](https://docs.docker.com/compose/)
+[![pnpm](https://img.shields.io/badge/pnpm-workspace-F69220?style=flat-square&logo=pnpm&logoColor=white)](https://pnpm.io/)
 
 </div>
 
@@ -17,92 +28,91 @@
 
 ## ✨ Purpose
 
-**Sky Office** (LEO OS) is the internal operations platform for **Leo Employment Services** — managing the full lifecycle of overseas workers in the Maldives:
+**Sky Office** *(LEO OS)* is the internal operations platform for **Leo Employment Services** — built to run the full lifecycle of overseas workers in the Maldives, from first passport scan through payroll and client invoicing.
 
-| Area | What it covers |
-|------|----------------|
-| 🛂 **Passport OCR** | AI extraction from passport scans → employee records |
-| 📋 **Master List** | Candidates, work permits, Xpat integration, job titles |
-| 📄 **LOA** | Letters of Appointment — auto-generated on onboarding |
-| 💰 **Billing & Salary** | Invoices, quotations, payroll, margin tracking |
-| 📊 **Dashboard** | KPIs, work permit alerts, expense & invoicing charts, tasks |
-| 📱 **Mobile** | Expo app for field staff (upload, master list, billing) |
-| 🔐 **Admin** | Companies, clients, users, permissions, credentials |
+<table>
+<tr>
+<td width="50%" valign="top">
 
----
+### 🛂 Onboarding
+- AI **passport OCR** → employee records
+- Auto-generated **Letters of Appointment**
+- Emergency contact capture & LOA sync
 
-## 📁 Repository layout
+</td>
+<td width="50%" valign="top">
 
-```
-sky_office_homelab/
-├── leo-os/              # Monorepo — web, API, mobile, shared packages
-│   ├── apps/web         # Vite + React PWA (admin UI)
-│   ├── apps/api         # Express REST API
-│   ├── apps/mobile      # Expo React Native
-│   ├── packages/db      # Drizzle ORM schema
-│   └── docs/            # Architecture, features, deployment
-├── docker-compose.yml   # Production stack (proxy, web, API, postgres)
-├── infra/               # nginx TLS proxy config
-├── api/                 # API runtime env (.env.example)
-├── react/               # nginx config for static web
-└── scripts/             # Helper scripts
-```
+### 📋 Operations
+- **Master list** with work permits & job titles
+- **Xpat** integration & expiry alerts
+- Company-linked credentials & permissions
 
----
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
 
-## 🚀 Quick start
+### 💰 Finance
+- Invoices, quotations & expense vouchers
+- Salary roster with margin tracking
+- Client billing with import from payroll
 
-```bash
-# Clone
-git clone https://github.com/adhuhaam/sky_office_homelab.git
-cd sky_office_homelab
+</td>
+<td width="50%" valign="top">
 
-# Local development (monorepo)
-cd leo-os && pnpm install
-pnpm --filter @leo/api run dev    # API
-pnpm --filter @leo/web run dev    # Web
-pnpm mobile:dev                   # Mobile
+### 📊 Insight & access
+- Dashboard KPIs, charts & task board
+- Installable **web PWA** for admins
+- **Expo mobile** app for field staff
 
-# Production deploy
-cd leo-os && pnpm deploy:web
-cd .. && docker compose build leo-api && docker compose up -d --force-recreate leo-api
-```
-
-Copy `api/.env.example` → `api/.env` and set secrets before starting the stack.
+</td>
+</tr>
+</table>
 
 ---
 
-## 📚 Documentation
-
-Detailed docs live in [`leo-os/docs/`](leo-os/docs/):
-
-- [Features](leo-os/docs/FEATURES.md) — every module
-- [Workflows](leo-os/docs/WORKFLOWS.md) — OCR, LOA, billing flows
-- [Architecture](leo-os/docs/ARCHITECTURE.md) — auth, API, OCR pipeline
-- [Deployment](leo-os/docs/DEPLOYMENT.md) — production checklist
-- [Data model](leo-os/docs/DATA-MODEL.md) — database schema
-
----
-
-## 🏗 Stack
+## 🏗 Architecture
 
 ```mermaid
-flowchart LR
-  Browser["🌐 Browser / 📱 Mobile"]
-  Proxy["🔒 leo-proxy"]
-  Web["📦 react-app"]
-  API["⚡ leo-api"]
-  DB["🐘 PostgreSQL"]
+flowchart TB
+  subgraph clients["Clients"]
+    Web["🌐 Web PWA"]
+    Mobile["📱 Expo Mobile"]
+  end
 
-  Browser --> Proxy --> Web
-  Proxy --> API --> DB
-  Web --> API
+  subgraph homelab["Homelab Stack"]
+  Proxy["🔒 leo-proxy · TLS"]
+  Static["📦 react-app · nginx"]
+  API["⚡ leo-api · Node"]
+  DB["🐘 PostgreSQL"]
+  end
+
+  Web --> Proxy
+  Mobile --> Proxy
+  Proxy --> Static
+  Proxy --> API
+  Static --> API
+  API --> DB
 ```
+
+| Layer | Technology |
+|:------|:-----------|
+| 🖥 **Web** | React 19 · Vite · shadcn/ui · TanStack Query |
+| 📱 **Mobile** | Expo · React Native |
+| ⚡ **API** | Express · Drizzle ORM · OpenAI OCR |
+| 🗄 **Data** | PostgreSQL 17 |
+| 🚀 **Deploy** | Docker Compose · nginx reverse proxy |
 
 ---
 
 <div align="center">
 
-**Sky Office** · Leo Employment Services · Homelab deployment
+<br />
+
+**Sky Office** · Leo Employment Services
+
+*Self-hosted homelab deployment*
+
+<br />
 
 </div>
