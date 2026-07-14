@@ -17,7 +17,14 @@ public static class NotificationSchemaBootstrap
             ?? throw new InvalidOperationException("Embedded SQL 001_sms_notifications.sql not found");
         using var reader = new StreamReader(stream);
         var sql = await reader.ReadToEndAsync(ct);
-        await db.Database.ExecuteSqlRawAsync(sql, ct);
+
+        // Use ADO.NET — EF ExecuteSqlRaw treats `{name}` in template seeds as format args.
+        var conn = db.Database.GetDbConnection();
+        if (conn.State != System.Data.ConnectionState.Open)
+            await db.Database.OpenConnectionAsync(ct);
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = sql;
+        await cmd.ExecuteNonQueryAsync(ct);
     }
 }
 

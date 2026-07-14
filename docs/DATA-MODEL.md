@@ -104,14 +104,62 @@ Schema modules also export `roles` helpers from `roles.ts`.
 
 ---
 
+## Notification / SMS tables (additive)
+
+Created by API startup bootstrap from `LeoOs.Infrastructure/Sql/001_sms_notifications.sql`. Snake_case Postgres; EF entities under `LeoOs.Infrastructure/Entities/`.
+
+### `sms_gateways`
+
+Device registry for Android SIM relays.
+
+| Column | Notes |
+|--------|--------|
+| `name`, `description`, `phone_number` | Display / SIM |
+| `gateway_key_hash` | Key hashed at rest; plaintext shown once on register |
+| `status` | `online` / `offline` |
+| `last_heartbeat`, `battery_level`, `signal_strength`, `network_type`, `sim_operator` | Telemetry |
+| `android_version`, `device_model`, `app_version`, `tailscale_ip`, `device_id` | Device identity |
+| `priority` | Selection weight for dispatch |
+
+### `sms_queue`
+
+Outbound jobs.
+
+| Column | Notes |
+|--------|--------|
+| `recipient`, `message` | Delivery payload |
+| `status` | `Pending` · `Sending` · `Sent` · `Failed` · `Cancelled` |
+| `priority`, `retry_count`, `next_retry_at` | Scheduling |
+| `gateway_id` | Assigned device (nullable until claimed) |
+| `reference_type`, `reference_id` | e.g. `loa` / `permit_expiry` + entity id |
+| `template_code` | Optional template used |
+
+### `sms_logs`
+
+Delivery audit trail (`recipient`, `message`, `status`, `provider` default `android-sim`, `response`, `sent_time`).
+
+### `notification_templates`
+
+| Column | Notes |
+|--------|--------|
+| `code` | Unique (`PermitExpiring`, `LoaCreated`, `EmployeeCreated`) |
+| `message` | Body with `{variables}` |
+| `variables` | Declared variable names |
+| `enabled` | Soft disable |
+
+See [SMS-GATEWAY.md](SMS-GATEWAY.md).
+
+---
+
 ## Computed / not stored
 
 | Data | Source |
 |------|--------|
-| Xpat WP status / photo | Live via `lib/xpat.ts` |
+| Xpat WP status / photo | Live via API Xpat proxy |
 | WP alerts | Aggregated Xpat + passport WP numbers |
 | Billing profit | client bill − salary cost from linked records |
 | Dashboard charts | Client aggregation of expenses/billing |
+| Android client status on About | Live `sms_gateways` / queue counts in `GET /system/about` |
 
 ---
 
@@ -121,4 +169,5 @@ Schema modules also export `roles` helpers from `roles.ts`.
 |----------|------|---------|
 | `GET /passports` | `loa_entries` | `jobTitle` in master list |
 | `GET /salary-records` | passports + LOA | `passportNumber`, `jobTitle` |
-| `GET /passports/work-permit-alerts` | passports + Xpat | Expiry alerts |
+| `GET /passports/work-permit-alerts` | passports + Xpat | Expiry alerts (+ optional SMS enqueue) |
+| SMS dispatch | `sms_queue` + online `sms_gateways` | SignalR push |

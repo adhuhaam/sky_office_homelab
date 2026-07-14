@@ -59,7 +59,27 @@ All below use `requireAuth` + `permissionsMiddleware` unless noted.
 | `passwords.ts` | Company credentials | **admin / superuser** |
 | `admin-users.ts` | User admin | **admin / superuser** |
 | `admin-permissions.ts` | Permission matrix | **superuser** |
-| `system.ts` | Branding / settings | Settings: **superuser** |
+| `system.ts` / `SystemController` | Branding / settings / **about** | Settings + about: **superuser** |
+| `GatewayController` | `/gateway` | Device key **or** admin/superuser |
+| `SmsController` | `/sms` | **admin / superuser** |
+
+## Notification / SMS (dotnet)
+
+Full contract: [SMS-GATEWAY.md](SMS-GATEWAY.md).
+
+| Method | Path | Auth |
+|--------|------|------|
+| POST | `/gateway/register` | Public (creates device + key) |
+| POST | `/gateway/heartbeat` | Gateway key |
+| POST | `/gateway/result` | Gateway key |
+| GET | `/gateway/config` | Gateway key |
+| GET/POST/DELETE | `/gateway`, `/gateway/{id}` | admin/superuser |
+| POST | `/sms/send`, `/sms/sendbulk` | admin/superuser |
+| GET | `/sms/pending`, `/sms/logs`, `/sms/statistics`, `/sms/templates` | admin/superuser |
+
+**SignalR:** `/hubs/sms-gateway?gatewayId=&gatewayKey=` (not under `/api`).
+
+**About System extras:** `GET /system/about` includes `androidClients` (admin metadata + live SMS gateway/queue status).
 
 ## Notable passport endpoints
 

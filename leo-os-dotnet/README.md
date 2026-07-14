@@ -24,9 +24,18 @@ curl -s http://127.0.0.1:5080/api/health/db
 
 | Project | Role |
 |---------|------|
-| `LeoOs.Api` | Controllers, session + permissions middleware, OCR |
-| `LeoOs.Infrastructure` | EF Core entities, scrypt hasher, money, permissions |
+| `LeoOs.Api` | Controllers, session + permissions middleware, OCR, **SmsGatewayHub** |
+| `LeoOs.Infrastructure` | EF Core entities, scrypt hasher, money, permissions, **Notifications** (queue, templates, dispatch worker, SQL bootstrap) |
+
+### Notification / SMS slice
+
+- Embedded SQL: `LeoOs.Infrastructure/Sql/001_sms_notifications.sql`
+- Hub: `/hubs/sms-gateway`
+- REST: `/api/gateway/*`, `/api/sms/*`
+- Docs: [SMS-GATEWAY.md](../docs/SMS-GATEWAY.md)
+
+Nginx must proxy `/hubs/` with WebSocket upgrade (react + leo-proxy).
 
 ## Docs
 
-[Migration / cutover](../docs/MIGRATION-DOTNET.md) · [System map](../docs/SYSTEM-MAP.md) · [Development](../docs/DEVELOPMENT.md)
+[Migration / cutover](../docs/MIGRATION-DOTNET.md) · [System map](../docs/SYSTEM-MAP.md) · [SMS gateway](../docs/SMS-GATEWAY.md) · [Android apps](../docs/ANDROID-APPS.md) · [Development](../docs/DEVELOPMENT.md)

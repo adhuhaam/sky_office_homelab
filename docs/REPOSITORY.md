@@ -38,10 +38,12 @@ apps/
 │   ├── setup-host.sh         # Legacy host setup (superseded)
 │   └── run-dotnet-api.sh     # Local ASP.NET API (:5080)
 ├── leo-os/                   # pnpm monorepo (web + Expo reference + legacy Express)
-├── leo-os-dotnet/            # Primary ASP.NET Core API
+├── leo-os-dotnet/            # Primary ASP.NET Core API (+ SMS/Notification)
 ├── leo-android/              # Native admin Compose app
 └── leo-sms-gateway/          # Android SIM SMS gateway
 ```
+
+See also [ANDROID-APPS.md](ANDROID-APPS.md) and [SMS-GATEWAY.md](SMS-GATEWAY.md).
 
 ## Monorepo (`leo-os/`)
 

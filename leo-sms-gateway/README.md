@@ -1,132 +1,90 @@
 # Leo SMS Gateway
 
-An Android app that acts as an SMS relay gateway. It connects to a backend server via **SignalR** (`/hubs/sms-gateway`), receives `SendSms` events, sends SMS messages via `SmsManager`, and reports results back through the hub or a REST fallback.
+Android SIM SMS relay for Sky Office. Connects to ASP.NET via **REST + SignalR** (`/hubs/sms-gateway`). No Firebase.
+
+**Full system docs:** [docs/SMS-GATEWAY.md](../docs/SMS-GATEWAY.md) · [docs/ANDROID-APPS.md](../docs/ANDROID-APPS.md)
 
 ---
 
-## Architecture
+## Stack
 
-| Layer | Technology |
-|---|---|
+| Layer | Choice |
+|-------|--------|
 | UI | Jetpack Compose + Material 3 |
 | DI | Hilt |
-| Networking | Retrofit 2 + OkHttp (cleartext allowed) |
-| Real-time | Microsoft SignalR Java client (`com.microsoft.signalr:signalr:8.0.7`) |
-| Database | Room (SMS log history) |
-| Preferences | DataStore |
-| Background | Foreground Service + WorkManager watchdog |
+| Network | Retrofit + OkHttp (cleartext allowed) |
+| Realtime | Microsoft SignalR Java client |
+| Local DB | Room (outbound logs) |
+| Background | Foreground Service + WorkManager + BOOT_COMPLETED |
+
+**applicationId:** `com.leo.smsgateway` · minSdk 26 · targetSdk 34
 
 ---
 
 ## Screens
 
-| Screen | Description |
-|---|---|
-| **Login / Register** | Enter server URL + gateway name → POST `/api/gateway/register` → stores credentials |
-| **Dashboard** | SignalR connection status, battery, SIM info, pending/sent/failed counts, Reconnect button |
-| **Logs** | Scrollable list of all relayed SMS with status (pending / sent / failed) |
-| **Settings** | Edit server URL, view gateway credentials, force restart, unregister |
+| Screen | Purpose |
+|--------|---------|
+| Login / Register | Server URL + name → `POST /api/gateway/register` |
+| Dashboard | Connection, telemetry, queue counts |
+| Logs | Local send history |
+| Settings | URL, credentials, restart / unregister |
 
 ---
 
-## Opening in Android Studio
-
-1. **Install Android Studio** Hedgehog 2023.1 or later.
-2. Open Android Studio → **File → Open** → select the `leo-sms-gateway` folder.
-3. Android Studio will automatically download **Gradle 8.7** and all dependencies on first sync.
-4. Wait for the Gradle sync to complete (may take a few minutes on first run).
-
----
-
-## Building an APK
-
-### From Android Studio
-
-1. **Build → Generate Signed Bundle / APK…**
-2. Choose **APK**, create or select a keystore, choose `release` build variant.
-3. The signed APK will be in `app/release/app-release.apk`.
-
-### Debug APK (no signing required)
-
-1. In Android Studio: **Build → Build Bundle(s) / APK(s) → Build APK(s)**
-2. Or from terminal (after Gradle wrapper is set up):
+## Build on your PC
 
 ```bash
-cd leo-sms-gateway
-
-# Generate Gradle wrapper (requires Gradle installed locally OR use Android Studio)
-gradle wrapper --gradle-version 8.7
-
-# Build debug APK
-./gradlew assembleDebug
+git clone git@github.com:adhuhaam/sky_office_homelab.git
+# Android Studio → Open leo-sms-gateway/
+./gradlew assembleDebug   # after wrapper exists
 ```
 
-The debug APK will be at: `app/build/outputs/apk/debug/app-debug.apk`
+Install on a phone with an active SIM. Prefer Tailscale URL `http://100.126.222.96`.
 
 ---
 
-## Server Integration
+## Server contract (aligned with API)
 
-### Registration
-
-```
-POST {serverUrl}/api/gateway/register
-Body: { "name": "...", "deviceId": "...", "deviceModel": "...", "androidVersion": "...", "appVersion": "..." }
-Response: { "gatewayId": "...", "gatewayKey": "...", "name": "..." }
-```
-
-### SignalR Hub
+### Register
 
 ```
-Hub URL: {serverUrl}/hubs/sms-gateway?gatewayId={id}&gatewayKey={key}
-
-Server → Client events:
-  SendSms({ messageId, phoneNumber, message })
-
-Client → Server methods:
-  Heartbeat(gatewayId)           — every 30 seconds
-  SmsCompleted(messageId)        — on successful send
-  SmsFailed(messageId, error)    — on failed send
+POST {server}/api/gateway/register
+Body: { "name", "deviceId", "deviceModel", "androidVersion", "appVersion" }
+Response: { "id", "name", "gatewayKey", "hubPath", "heartbeatIntervalSeconds" }
 ```
 
-### REST Fallback (when hub is disconnected)
+Store `id` as gatewayId and **gatewayKey** (shown once).
+
+### Hub
 
 ```
-POST {serverUrl}/api/gateway/result
-Body: { "messageId": "...", "gatewayId": "...", "status": "completed|failed", "error": null|"..." }
+{server}/hubs/sms-gateway?gatewayId={id}&gatewayKey={key}
 
-POST {serverUrl}/api/gateway/heartbeat
-Body: { "gatewayId": "...", "timestamp": 1234567890 }
+Server → device:  SendSms({ queueId, recipient, message })
+Device → server:  Heartbeat(dto), SmsCompleted({ queueId, response }), SmsFailed({ queueId, response })
+```
+
+### REST fallback
+
+```
+POST {server}/api/gateway/heartbeat
+  { gatewayId, gatewayKey, batteryLevel?, … }
+
+POST {server}/api/gateway/result
+  { gatewayId, gatewayKey, queueId, success, response? }
 ```
 
 ---
 
-## Permissions Required (granted at runtime)
+## Permissions
 
-| Permission | Purpose |
-|---|---|
-| `SEND_SMS` | Relay SMS messages |
-| `READ_PHONE_STATE` | Read SIM state and operator name |
-| `POST_NOTIFICATIONS` | Show foreground service notification (Android 13+) |
+`SEND_SMS` · `READ_PHONE_STATE` · `POST_NOTIFICATIONS` · `FOREGROUND_SERVICE*` · `RECEIVE_BOOT_COMPLETED` · `WAKE_LOCK` · `INTERNET` · `ACCESS_NETWORK_STATE`
+
+OEM battery exemptions (Xiaomi / Samsung) are required for reliable heartbeats.
 
 ---
 
-## Build Config
+## Ops visibility
 
-| Setting | Value |
-|---|---|
-| `minSdk` | 26 (Android 8.0) |
-| `targetSdk` | 34 (Android 14) |
-| `applicationId` | `com.leo.smsgateway` |
-| Kotlin | 2.0.0 |
-| AGP | 8.5.2 |
-| Compose BOM | 2024.09.00 |
-| SignalR | 8.0.7 |
-
----
-
-## Notes
-
-- The app uses `usesCleartextTraffic="true"` and a permissive `network_security_config.xml` to support HTTP (non-HTTPS) backend servers on local networks.
-- The WorkManager watchdog runs every 15 minutes to restart the foreground service if it was killed. The actual 30-second heartbeat runs as a coroutine inside the service itself.
-- SMS logs are stored in a local Room database and accessible in the Logs screen.
+After register: web **SMS Gateways** (`/sms-gateways`) and **About System** SMS card should show the device when online.

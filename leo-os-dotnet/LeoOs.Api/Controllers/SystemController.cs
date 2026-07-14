@@ -191,6 +191,40 @@ public sealed class SystemController : ControllerBase
         var apiStatus = "live";
         var dbNodeStatus = dbStatus == "ok" ? "live" : "degraded";
 
+        object androidClients;
+        try
+        {
+            androidClients = await BuildAndroidClientsStatusAsync(ct);
+        }
+        catch
+        {
+            androidClients = new
+            {
+                admin = new
+                {
+                    packageId = "com.leo.admin",
+                    path = "leo-android/",
+                    status = "building",
+                    defaultApiBase = "http://100.126.222.96",
+                    shipping = "local_build",
+                    note = "Native Compose admin (Expo replacement). Open in Android Studio.",
+                },
+                smsGateway = new
+                {
+                    packageId = "com.leo.smsgateway",
+                    path = "leo-sms-gateway/",
+                    hubPath = "/hubs/sms-gateway",
+                    status = "unavailable",
+                    online = 0,
+                    offline = 0,
+                    total = 0,
+                    queue = new { pending = 0, sending = 0, sent = 0, failed = 0 },
+                    gateways = Array.Empty<object>(),
+                    note = "SMS tables not ready yet",
+                },
+            };
+        }
+
         return Ok(new
         {
             generatedAt = DateTimeOffset.UtcNow.ToString("O"),
@@ -211,6 +245,7 @@ public sealed class SystemController : ControllerBase
                 apiRuntime = "aspnetcore",
                 rewriteRuntime = "aspnetcore (primary)",
             },
+            androidClients,
             server = new
             {
                 hostname = Environment.MachineName,
@@ -244,7 +279,8 @@ public sealed class SystemController : ControllerBase
                 languages = new[]
                 {
                     new { name = "C#", role = "Primary API (ASP.NET Core 8)" },
-                    new { name = "TypeScript", role = "React PWA + Expo mobile" },
+                    new { name = "TypeScript", role = "React PWA" },
+                    new { name = "Kotlin", role = "Android admin + SMS gateway" },
                     new { name = "SQL (PostgreSQL)", role = "Persistence (leoos)" },
                 },
                 runtimes = new[]
@@ -252,13 +288,14 @@ public sealed class SystemController : ControllerBase
                     new { name = ".NET", version = Environment.Version.ToString() },
                     new { name = "React", version = "19" },
                     new { name = "PostgreSQL", version = "17" },
-                    new { name = "Expo / React Native", version = "54" },
+                    new { name = "Jetpack Compose", version = "Material 3" },
                 },
                 toolchain = new[]
                 {
                     new { name = "Docker Compose", role = "Homelab deployment" },
-                    new { name = "nginx", role = "TLS proxy + static SPA" },
+                    new { name = "nginx", role = "TLS proxy + static SPA + SignalR /hubs" },
                     new { name = "EF Core", role = "ORM" },
+                    new { name = "SignalR", role = "SMS gateway realtime" },
                     new { name = "Tailscale", role = "Private remote access" },
                 },
             },
@@ -270,6 +307,68 @@ public sealed class SystemController : ControllerBase
             },
             structure = BuildSystemStructure(overall, apiStatus, dbNodeStatus, dbLatencyMs),
         });
+    }
+
+    private async Task<object> BuildAndroidClientsStatusAsync(CancellationToken ct)
+    {
+        var gateways = await _db.SmsGateways.AsNoTracking()
+            .OrderByDescending(g => g.LastHeartbeat)
+            .ToListAsync(ct);
+        var online = gateways.Count(g => string.Equals(g.Status, "online", StringComparison.OrdinalIgnoreCase));
+        var offline = gateways.Count - online;
+
+        var queueRows = await _db.SmsQueue.AsNoTracking()
+            .Select(q => q.Status)
+            .ToListAsync(ct);
+        var pending = queueRows.Count(s => s == "Pending");
+        var sending = queueRows.Count(s => s == "Sending");
+        var sent = queueRows.Count(s => s == "Sent");
+        var failed = queueRows.Count(s => s == "Failed");
+
+        string smsStatus;
+        if (gateways.Count == 0) smsStatus = "no_gateway";
+        else if (online > 0) smsStatus = "live";
+        else smsStatus = "offline";
+
+        return new
+        {
+            admin = new
+            {
+                packageId = "com.leo.admin",
+                path = "leo-android/",
+                status = "building",
+                defaultApiBase = "http://100.126.222.96",
+                shipping = "local_build",
+                cleartext = true,
+                note = "Native Compose admin replacing Expo. Build on your PC from git; set API URL in Profile.",
+            },
+            smsGateway = new
+            {
+                packageId = "com.leo.smsgateway",
+                path = "leo-sms-gateway/",
+                hubPath = "/hubs/sms-gateway",
+                status = smsStatus,
+                online,
+                offline,
+                total = gateways.Count,
+                queue = new { pending, sending, sent, failed },
+                gateways = gateways.Select(g => new
+                {
+                    id = g.Id,
+                    name = g.Name,
+                    status = g.Status,
+                    phoneNumber = g.PhoneNumber,
+                    batteryLevel = g.BatteryLevel,
+                    lastHeartbeat = g.LastHeartbeat,
+                    simOperator = g.SimOperator,
+                    deviceModel = g.DeviceModel,
+                    tailscaleIp = g.TailscaleIp,
+                }).ToList(),
+                note = online > 0
+                    ? $"{online} gateway(s) online · SignalR /hubs/sms-gateway"
+                    : "No online SMS gateway — install leo-sms-gateway APK and register.",
+            },
+        };
     }
 
     private static object BuildSystemStructure(string overall, string apiStatus, string dbStatus, double dbLatencyMs)

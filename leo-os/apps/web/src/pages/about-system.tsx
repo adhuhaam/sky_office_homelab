@@ -14,6 +14,8 @@ import {
   FolderTree,
   ChevronDown,
   ChevronRight,
+  Smartphone,
+  Radio,
 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -80,6 +82,39 @@ type SystemAbout = {
     mobileApi: string;
   };
   structure?: StructureNode;
+  androidClients?: {
+    admin: {
+      packageId: string;
+      path: string;
+      status: string;
+      defaultApiBase: string;
+      shipping?: string;
+      cleartext?: boolean;
+      note?: string;
+    };
+    smsGateway: {
+      packageId: string;
+      path: string;
+      hubPath: string;
+      status: string;
+      online: number;
+      offline: number;
+      total: number;
+      queue: { pending: number; sending: number; sent: number; failed: number };
+      gateways: {
+        id: number;
+        name: string;
+        status: string;
+        phoneNumber?: string | null;
+        batteryLevel?: number | null;
+        lastHeartbeat?: string | null;
+        simOperator?: string | null;
+        deviceModel?: string | null;
+        tailscaleIp?: string | null;
+      }[];
+      note?: string;
+    };
+  };
 };
 
 const DEFAULT_POLL_MS = 5000;
@@ -142,21 +177,21 @@ function HealthBadge({ overall }: { overall: "healthy" | "degraded" }) {
 function StatusPill({ status }: { status?: string | null }) {
   if (!status) return null;
   const s = status.toLowerCase();
-  if (s === "live" || s === "healthy") {
+  if (s === "live" || s === "healthy" || s === "online") {
     return (
       <Badge className="font-mono text-[10px] bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100">
         {status}
       </Badge>
     );
   }
-  if (s === "legacy") {
+  if (s === "legacy" || s === "building" || s === "local_build") {
     return (
       <Badge variant="secondary" className="font-mono text-[10px]">
         {status}
       </Badge>
     );
   }
-  if (s === "degraded" || s === "error") {
+  if (s === "degraded" || s === "error" || s === "offline" || s === "no_gateway" || s === "unavailable") {
     return (
       <Badge variant="destructive" className="font-mono text-[10px]">
         {status}
@@ -426,6 +461,107 @@ export function AboutSystemPage() {
           </CardContent>
         </Card>
       </div>
+
+      {data.androidClients ? (
+        <div className="grid gap-6 md:grid-cols-2">
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Smartphone className="h-4 w-4 text-muted-foreground" />
+                  <CardTitle className="text-base">Android admin</CardTitle>
+                </div>
+                <StatusPill status={data.androidClients.admin.status} />
+              </div>
+              <CardDescription>
+                Native Compose app (<code className="font-mono text-xs">leo-android</code>) —
+                build locally from git
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <dl>
+                <StatRow label="Package" value={data.androidClients.admin.packageId} />
+                <StatRow label="Source" value={data.androidClients.admin.path} />
+                <StatRow label="Default API" value={data.androidClients.admin.defaultApiBase} />
+                <StatRow
+                  label="Shipping"
+                  value={data.androidClients.admin.shipping ?? "—"}
+                />
+                <StatRow
+                  label="Cleartext HTTP"
+                  value={data.androidClients.admin.cleartext ? "enabled (LAN/Tailscale)" : "—"}
+                />
+              </dl>
+              {data.androidClients.admin.note ? (
+                <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
+                  {data.androidClients.admin.note}
+                </p>
+              ) : null}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Radio className="h-4 w-4 text-muted-foreground" />
+                  <CardTitle className="text-base">SMS gateway</CardTitle>
+                </div>
+                <StatusPill status={data.androidClients.smsGateway.status} />
+              </div>
+              <CardDescription>
+                SIM relays via SignalR · package{" "}
+                <code className="font-mono text-xs">{data.androidClients.smsGateway.packageId}</code>
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <dl>
+                <StatRow label="Hub" value={data.androidClients.smsGateway.hubPath} />
+                <StatRow
+                  label="Gateways"
+                  value={`${data.androidClients.smsGateway.online} online · ${data.androidClients.smsGateway.offline} offline · ${data.androidClients.smsGateway.total} total`}
+                />
+                <StatRow
+                  label="Queue"
+                  value={`P ${data.androidClients.smsGateway.queue.pending} · S ${data.androidClients.smsGateway.queue.sending} · Sent ${data.androidClients.smsGateway.queue.sent} · Fail ${data.androidClients.smsGateway.queue.failed}`}
+                />
+              </dl>
+              {data.androidClients.smsGateway.gateways.length > 0 ? (
+                <div className="space-y-2 border-t border-border/60 pt-3">
+                  {data.androidClients.smsGateway.gateways.map((g) => (
+                    <div
+                      key={g.id}
+                      className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between text-sm"
+                    >
+                      <div className="flex flex-wrap items-center gap-2 min-w-0">
+                        <span className="font-medium truncate">{g.name}</span>
+                        <StatusPill status={g.status} />
+                        <span className="text-xs font-mono text-muted-foreground">#{g.id}</span>
+                      </div>
+                      <div className="text-xs font-mono text-muted-foreground sm:text-right">
+                        {[g.phoneNumber, g.simOperator, g.batteryLevel != null ? `batt ${g.batteryLevel}%` : null]
+                          .filter(Boolean)
+                          .join(" · ") || "—"}
+                        <div>
+                          HB{" "}
+                          {g.lastHeartbeat
+                            ? new Date(g.lastHeartbeat).toLocaleString()
+                            : "never"}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+              {data.androidClients.smsGateway.note ? (
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {data.androidClients.smsGateway.note}
+                </p>
+              ) : null}
+            </CardContent>
+          </Card>
+        </div>
+      ) : null}
 
       <Card>
         <CardHeader className="pb-3">

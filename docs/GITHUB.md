@@ -34,9 +34,10 @@ Until that consolidation is done, treat **`origin` / sky_office_homelab** as the
 
 ### Commit
 
-- Source under `leo-os/`, `leo-os-dotnet/`
-- `docs/`, README, scripts, `docker-compose.yml`
+- Source under `leo-os/`, `leo-os-dotnet/`, `leo-android/`, `leo-sms-gateway/`
+- `docs/` (including ANDROID-APPS.md, SMS-GATEWAY.md), README, scripts, `docker-compose.yml`
 - nginx **configs** (not private key material if ignored)
+- Gradle project files (`*.kts`, wrapper properties)
 - `.env.example` files
 
 ### Never commit (use Layer 2 archives)
@@ -45,12 +46,14 @@ Until that consolidation is done, treat **`origin` / sky_office_homelab** as the
 - `infra/certs/*.pem` / `*.key`
 - `postgresql/data/`
 - Production passwords, API keys
+- `*.apk`, `*.aab`, keystores, `local.properties`, `.gradle/`
 
 ### Rebuild instead of storing
 
 - `node_modules/` → `pnpm install`
 - `react/app/` → `pnpm deploy:web`
 - Docker images → `docker compose build`
+- Android APKs → build on PC (see [ANDROID-APPS.md](ANDROID-APPS.md))
 
 ## Day-to-day backup via Git
 

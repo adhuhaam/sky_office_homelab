@@ -26,10 +26,11 @@ flowchart TD
 2. Upload → wait for extraction → review fields
 3. Choose company → fill employment (LOA options dropdowns)
 4. **Complete** → LOA created automatically
+5. If emergency/company phone present → SMS `LoaCreated` may enqueue (needs online gateway)
 
 ### Mobile
 
-1. Upload tab → camera / gallery / PDF
+1. Native **leo-android** Upload (Expo reference until parity) → camera / gallery / PDF
 2. Extract → assign company
 3. Save to master list → PATCH company + POST LOA
 
@@ -84,6 +85,18 @@ Math: `apps/api/src/lib/money.ts`.
    - **Expired** — expiry before today
    - **Expiring soon** — within next 3 calendar months
 4. Employer name from Xpat (not internal company)
+5. **SMS (optional):** for each `expiring_soon` with `emergency_contact_phone`, enqueue template `PermitExpiring` via `INotificationService` if no `permit_expiry` queue row in the last **7 days**
+
+---
+
+## 4b. Outbound SMS via Android gateway
+
+1. Feature calls `INotificationService.SendSms*` → `sms_queue`
+2. `SmsDispatchWorker` claims Pending → SignalR `SendSms` to an online gateway
+3. `leo-sms-gateway` sends SIM SMS → `SmsCompleted` / `SmsFailed`
+4. Ops visibility: `/sms-gateways`, About System SMS card, `sms_logs`
+
+Product hooks today: LOA create (`LoaCreated`), permit alerts (`PermitExpiring`). Details: [SMS-GATEWAY.md](SMS-GATEWAY.md).
 
 ---
 

@@ -29,6 +29,8 @@ Canonical docs for the self-hosted system at `/home/adhuhaam/apps`.
 | [AUTH.md](AUTH.md) | Sessions, RBAC |
 | [ENVIRONMENT.md](ENVIRONMENT.md) | Env vars |
 | [SMS-GATEWAY.md](SMS-GATEWAY.md) | Android SIM SMS relay · SignalR · queue |
+| [ANDROID-APPS.md](ANDROID-APPS.md) | leo-android + leo-sms-gateway local build |
+| [NOTIFICATIONS.md](NOTIFICATIONS.md) | Agent notes for the Notification slice |
 
 ### Run & operate
 
@@ -59,8 +61,10 @@ Canonical docs for the self-hosted system at `/home/adhuhaam/apps`.
 
 ```bash
 sudo bash /home/adhuhaam/apps/scripts/go-live.sh
-# Parallel .NET API (does not replace Node yet):
-bash /home/adhuhaam/apps/scripts/run-dotnet-api.sh
+# Production API + web:
+cd /home/adhuhaam/apps && docker compose up -d
+cd /home/adhuhaam/apps/leo-os && pnpm deploy:web
+# Android: build on PC — docs/ANDROID-APPS.md
 ```
 
 Older notes under `leo-os/docs/` are superseded by this folder for system truth.

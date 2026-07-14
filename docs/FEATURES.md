@@ -129,23 +129,50 @@ Superuser: app name, accent color, branding logos (≤ 1 MB), OCR API key / mode
 
 ---
 
+## About System (`/about-system`)
+
+Superuser live page (auto-refresh ~5s): health, host metrics, structure tree, stack, access URLs, plus:
+
+- **Android admin** status (`leo-android` packaging / shipping)
+- **SMS gateway** live device + queue status
+
+API: `GET /api/system/about`.
+
+---
+
+## SMS Gateways (`/sms-gateways`)
+
+Superuser ops UI: gateway list, queue statistics, recent logs, test send. See [SMS-GATEWAY.md](SMS-GATEWAY.md).
+
+---
+
 ## PWA
 
 Installable web app (`vite-plugin-pwa`). SW / workbox / manifest served with no-cache from react-app nginx.
 
 ---
 
-## Mobile (LEO Admin)
+## Mobile — Leo Admin (native)
+
+Kotlin Compose app at `leo-android/` (`com.leo.admin`). Replaces Expo for field use.
 
 | Area | Purpose |
 |------|---------|
-| Home | Dashboard stats |
-| Upload | OCR + company + LOA |
-| Master | Employee list |
-| Billing / Salary / Expenses | Finance |
-| More | Companies, clients, LOA, passwords, admin |
+| Home | Dashboard stats / tasks |
+| Upload | OCR multipart |
+| Master | Employee list + detail |
+| Billing / Salary / Expenses | Finance lists |
+| More | LOA, companies, clients, passwords, admin users, profile (API base URL) |
 
-Package id: `com.leo.admin`. Same API as web; Bearer auth.
+Parity checklist: `leo-android/PARITY-QA.md`. Full build notes: [ANDROID-APPS.md](ANDROID-APPS.md).
+
+Expo (`leo-os/apps/mobile`) = legacy reference only.
+
+---
+
+## SMS Gateway (Android)
+
+Separate app `leo-sms-gateway/` (`com.leo.smsgateway`) — SIM relay, not the admin UI. See [SMS-GATEWAY.md](SMS-GATEWAY.md) · [ANDROID-APPS.md](ANDROID-APPS.md).
 
 ---
 

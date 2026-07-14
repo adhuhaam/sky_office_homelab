@@ -4,8 +4,10 @@
 
 | Client | Mechanism |
 |--------|-----------|
-| Web PWA | HttpOnly cookie `leo.sid` (express-session) |
-| Mobile | Bearer token = session id from `GET /api/auth/mobile-token`, stored in Expo Secure Store |
+| Web PWA | HttpOnly cookie `leo.sid` (mirrored in ASP.NET; Secure only when request is HTTPS / `X-Forwarded-Proto`) |
+| Native admin (`leo-android`) | Bearer = session id from `GET /api/auth/mobile-token` (DataStore) |
+| Expo mobile (legacy) | Same Bearer flow; Secure Store |
+| SMS gateway device | `gatewayId` + `gatewayKey` (hub query / REST body) — **not** a user session |
 
 Both resolve to the same Postgres-backed session row (`session` table via `connect-pg-simple`).
 

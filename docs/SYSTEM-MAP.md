@@ -40,8 +40,10 @@ Roles: `superuser` · `admin` · `company` · `client` · `agent` · `employee`
 ```bash
 sudo bash /home/adhuhaam/apps/scripts/go-live.sh
 cd /home/adhuhaam/apps/leo-os && pnpm deploy:web   # after web changes
-cd /home/adhuhaam/apps && docker compose build leo-api-dotnet && docker compose up -d --force-recreate leo-api-dotnet
+cd /home/adhuhaam/apps && docker compose build leo-api-dotnet && docker compose up -d --force-recreate leo-api-dotnet react leo-proxy
 ```
+
+Android APKs: build on PC after `git pull` — [ANDROID-APPS.md](ANDROID-APPS.md).
 
 ## Where to read next
 
@@ -52,7 +54,9 @@ cd /home/adhuhaam/apps && docker compose build leo-api-dotnet && docker compose 
 | Workflows | [WORKFLOWS.md](WORKFLOWS.md) |
 | Schema | [DATA-MODEL.md](DATA-MODEL.md) |
 | REST | [API.md](API.md) |
+| Android apps | [ANDROID-APPS.md](ANDROID-APPS.md) |
 | SMS gateway | [SMS-GATEWAY.md](SMS-GATEWAY.md) |
+| Notifications (agents) | [NOTIFICATIONS.md](NOTIFICATIONS.md) |
 | Ops | [OPERATIONS.md](OPERATIONS.md) |
 | GitHub | [GITHUB.md](GITHUB.md) |
 | Backup / DR | [BACKUP-AND-RESTORE.md](BACKUP-AND-RESTORE.md) · [DISASTER-RECOVERY.md](DISASTER-RECOVERY.md) |

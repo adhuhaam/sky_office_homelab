@@ -18,6 +18,8 @@ Use **pnpm** only (not npm/yarn) in this monorepo. API changes go in `leo-os-dot
 
 Prefer the system docs at [`/home/adhuhaam/apps/docs/`](../docs/) — start with [SYSTEM-MAP.md](../docs/SYSTEM-MAP.md).
 
+Mobile / SMS: [ANDROID-APPS.md](../docs/ANDROID-APPS.md) · [SMS-GATEWAY.md](../docs/SMS-GATEWAY.md) · [NOTIFICATIONS.md](../docs/NOTIFICATIONS.md)
+
 ## Deploy (production)
 
 ```bash

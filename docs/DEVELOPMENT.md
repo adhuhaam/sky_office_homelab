@@ -37,7 +37,18 @@ bash /home/adhuhaam/apps/scripts/run-dotnet-api.sh
 cd /home/adhuhaam/apps/leo-os-dotnet && dotnet build
 ```
 
-See [MIGRATION-DOTNET.md](MIGRATION-DOTNET.md).
+Includes Notification/SMS module (SignalR hub + queue). See [SMS-GATEWAY.md](SMS-GATEWAY.md) · [MIGRATION-DOTNET.md](MIGRATION-DOTNET.md).
+
+## Android (local workstation)
+
+Do **not** expect Gradle builds on the homelab. On your PC:
+
+```bash
+git pull origin main   # repo: sky_office_homelab
+# Android Studio → open leo-android/ or leo-sms-gateway/
+```
+
+Details: [ANDROID-APPS.md](ANDROID-APPS.md). Expo (`pnpm mobile:dev`) is legacy reference only.
 
 ## Local API (Node — legacy / reference)
 

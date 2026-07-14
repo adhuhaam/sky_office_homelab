@@ -72,7 +72,17 @@ docker compose up -d --force-recreate leo-proxy
 | `ERR_SSL_PROTOCOL_ERROR` on HTTPS Tailscale IP | Serve + Docker both on 443 / cert mismatch | Use HTTP on `100.x`; disable Serve |
 | CasaOS `Not Found` on `/api/health` | CasaOS owned port 80 | `go-live.sh` / `stop-casaos.sh` |
 | Cookies fail on HTTP | `COOKIE_SECURE` without `secure: "auto"` | Current session code uses `"auto"` |
-| Mobile cleartext blocked | Android blocks HTTP | `usesCleartextTraffic: true` in mobile `app.json` |
+| Mobile cleartext blocked | Android blocks HTTP | `usesCleartextTraffic` + network security config on `leo-android` / `leo-sms-gateway` |
+| SignalR SMS hub fails | Missing WebSocket upgrade | Ensure `/hubs/` locations on react + leo-proxy |
+| `sms_*` relation missing | Schema bootstrap failed | Apply SQL or recreate API; see [SMS-GATEWAY.md](SMS-GATEWAY.md) |
+
+## Android ops
+
+Build apps on a PC (not the server). Git pull `sky_office_homelab` → Android Studio. Guide: [ANDROID-APPS.md](ANDROID-APPS.md).
+
+Live status: `/about-system` · device ops: `/sms-gateways`.
+
+## Security ops notes
 
 ## Security ops notes
 

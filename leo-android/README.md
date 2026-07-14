@@ -1,33 +1,42 @@
 # Leo Admin (Android)
 
-Native Kotlin + Jetpack Compose replacement for the Expo app at `leo-os/apps/mobile`.
+Native Kotlin + Jetpack Compose field app. Replaces Expo `leo-os/apps/mobile`.
+
+Canonical docs: [docs/ANDROID-APPS.md](../docs/ANDROID-APPS.md) · [docs/SMS-GATEWAY.md](../docs/SMS-GATEWAY.md) · [PARITY-QA.md](PARITY-QA.md)
 
 | Setting | Value |
 |---------|-------|
-| Package | `com.leo.admin` |
+| Package / applicationId | `com.leo.admin` |
 | UI | Compose + Material 3 |
 | DI | Hilt |
 | Network | Retrofit + OkHttp (cleartext for LAN/Tailscale) |
-| Default API | Configurable in Profile (Tailscale `http://100.126.222.96`) |
+| Session | Bearer from `/api/auth/mobile-token` (DataStore) |
+| Default API idea | `http://100.126.222.96` (set in Profile) |
 
 ## Screens (parity waves)
 
-- Wave 0–1: Login, session, dashboard stats/tasks, master list, passport detail
-- Wave 2: Upload (multipart OCR), LOA list
-- Wave 3: Companies, clients, passwords
-- Wave 4: Billing, expenses, salary lists
-- Wave 5: Admin users, profile (base URL + logout)
-- Wave 6: Remaining Expo polish (QR / haptics) still pending device QA
+| Wave | Features |
+|------|----------|
+| 0–1 | Login, session, dashboard, master list, passport detail |
+| 2 | Upload (multipart OCR), LOA list |
+| 3 | Companies, clients, passwords |
+| 4 | Billing, expenses, salary lists |
+| 5 | Admin users, profile (base URL + logout) |
+| 6 | Expo polish (QR / haptics) + parity QA |
 
-## Open in Android Studio
+## Build on your PC
 
-1. Open `apps/leo-android`
-2. Sync Gradle (AGP 8.5 / Gradle 8.7)
-3. Run on device or emulator with network to the API
+Homelab server does **not** build this app.
 
 ```bash
-# After wrapper is generated (Android Studio or gradle wrapper):
+git clone git@github.com:adhuhaam/sky_office_homelab.git
+# Android Studio → Open leo-android/
+# First sync may generate gradlew
 ./gradlew assembleDebug
 ```
 
-Expo remains at `leo-os/apps/mobile` until parity QA is signed off.
+APK: `app/build/outputs/apk/debug/app-debug.apk`
+
+## Do not confuse with SMS gateway
+
+`leo-sms-gateway` (`com.leo.smsgateway`) is a separate APK for SIM relays.
