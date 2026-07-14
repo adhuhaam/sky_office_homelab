@@ -16,6 +16,8 @@ import {
   LogOut,
   CircleUserRound,
   DollarSign,
+  Info,
+  Radio,
 } from "lucide-react";
 import {
   Sidebar,
@@ -58,6 +60,8 @@ const ALL_NAV_ITEMS: NavItem[] = [
   { href: "/users", label: "User Management", icon: UserCog, roles: ["superuser", "admin"] },
   { href: "/permissions", label: "Permissions", icon: ShieldCheck, roles: ["superuser"] },
   { href: "/settings", label: "Settings", icon: Settings, roles: ["superuser"] },
+  { href: "/sms-gateways", label: "SMS Gateways", icon: Radio, roles: ["superuser"] },
+  { href: "/about-system", label: "About System", icon: Info, roles: ["superuser"] },
 ];
 
 function BrandMark({ size = "default" }: { size?: "default" | "small" }) {
@@ -88,7 +92,9 @@ function AppSidebar() {
     ["/upload", "/master-list", "/companies", "/clients", "/loa", "/expenses", "/salary", "/billing", "/passwords"].includes(i.href),
   );
   const adminItems = visibleItems.filter((i) => i.href === "/users" || i.href === "/permissions");
-  const systemItems = visibleItems.filter((i) => i.href === "/settings");
+  const systemItems = visibleItems.filter(
+    (i) => i.href === "/settings" || i.href === "/sms-gateways" || i.href === "/about-system",
+  );
 
   const groups = [
     { group: "Overview", items: overviewItems },

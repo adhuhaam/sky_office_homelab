@@ -5,24 +5,18 @@ Guidance for AI assistants and developers working in this repo.
 ## Layout
 
 - `apps/web` — Vite React admin UI (primary surface for bug fixes)
-- `apps/api` — Express 5 API; routes in `src/routes/`, middleware in `src/middleware/`
-- `apps/mobile` — Expo app; touch when the task is mobile-specific
+- `apps/api` — legacy Express API (retired from production; keep for rollback reference)
+- `apps/mobile` — Expo app (legacy reference until `leo-android` parity QA); prefer native admin + SMS gateway for new mobile work
+- Sibling apps (outside monorepo): `../leo-android` (Compose admin), `../leo-sms-gateway` (SIM SMS gateway)
 - `packages/db` — Drizzle schema; run `pnpm --filter @leo/db run push` for schema changes
 - `packages/api-client-react` — shared React Query client + generated types
+- `../leo-os-dotnet/` — **primary ASP.NET Core API** (`leo-api-dotnet`)
 
-Use **pnpm** only (not npm/yarn).
+Use **pnpm** only (not npm/yarn) in this monorepo. API changes go in `leo-os-dotnet/`.
 
 ## Documentation
 
-Read before large changes:
-
-| Doc | When to use |
-|-----|-------------|
-| [docs/FEATURES.md](docs/FEATURES.md) | What each module does, roles, file paths |
-| [docs/WORKFLOWS.md](docs/WORKFLOWS.md) | OCR → LOA, salary → invoice, Xpat alerts |
-| [docs/DATA-MODEL.md](docs/DATA-MODEL.md) | Tables, FKs, computed fields |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Auth, routes, OCR, packages |
-| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Production deploy steps |
+Prefer the system docs at [`/home/adhuhaam/apps/docs/`](../docs/) — start with [SYSTEM-MAP.md](../docs/SYSTEM-MAP.md).
 
 ## Deploy (production)
 
@@ -30,11 +24,11 @@ Read before large changes:
 # Web → /home/adhuhaam/apps/react/app/
 cd /home/adhuhaam/apps/leo-os && pnpm deploy:web
 
-# API Docker container
-cd /home/adhuhaam/apps && docker compose build leo-api && docker compose up -d --force-recreate leo-api
+# API Docker container (.NET)
+cd /home/adhuhaam/apps && docker compose build leo-api-dotnet && docker compose up -d --force-recreate leo-api-dotnet
 ```
 
-Stack: leo-proxy → react-app → leo-api → postgres. LAN: `https://192.168.18.150/`
+Stack: leo-proxy → react-app → leo-api-dotnet → postgres. LAN: `https://192.168.18.150/`
 
 ## Conventions
 

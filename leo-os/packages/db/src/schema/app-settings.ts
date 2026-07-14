@@ -15,7 +15,6 @@ export const appSettingsTable = pgTable("app_settings", {
   deepseekApiKey: text("deepseek_api_key"),
   deepseekOcrBaseUrl: text("deepseek_ocr_base_url"),
   deepseekOcrModel: text("deepseek_ocr_model"),
-  extensionToken: text("extension_token"),
   passwordHash: text("password_hash"),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()

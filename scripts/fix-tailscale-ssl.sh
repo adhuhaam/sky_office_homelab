@@ -16,7 +16,7 @@ fi
 
 echo "==> Restarting leo-proxy..."
 cd "${APPS_DIR}"
-sudo -u "${REAL_USER}" docker compose up -d --build --force-recreate leo-proxy leo-api 2>&1
+sudo -u "${REAL_USER}" docker compose up -d --build --force-recreate leo-proxy leo-api-dotnet 2>&1
 
 echo "==> Disabling Tailscale Serve..."
 if command -v tailscale >/dev/null; then

@@ -25,12 +25,16 @@ import { UploadPage } from "@/pages/upload";
 import { MasterListPage } from "@/pages/master-list";
 import { EmployeeProfilePage } from "@/pages/employee-profile";
 import { SettingsPage } from "@/pages/settings";
+import { AboutSystemPage } from "@/pages/about-system";
+import { SmsGatewayPage } from "@/pages/sms-gateways";
 import { UsersPage } from "@/pages/users";
 import { PermissionsPage } from "@/pages/permissions";
 import { ProfilePage } from "@/pages/profile";
 import { UserProfilePage } from "@/pages/user-profile";
 import { NotFoundPage } from "@/pages/not-found";
 import { ExpenseVoucherPrintPage } from "@/pages/expense-voucher-print";
+import { SalarySheetViewPage } from "@/pages/salary-sheet-view";
+import { SalaryPayslipPage } from "@/pages/salary-payslip-page";
 
 const queryClient = new QueryClient();
 
@@ -43,6 +47,8 @@ function AppRoutes() {
       <Route path="/billing/:id/print" component={BillingPrintPage} />
       <Route path="/loa/:id/print" component={LoaPrintPage} />
       <Route path="/expenses/:id/print" component={ExpenseVoucherPrintPage} />
+      <Route path="/salary/sheet" component={SalarySheetViewPage} />
+      <Route path="/salary/:id/payslip" component={SalaryPayslipPage} />
       <Route>
         <ProtectedRoute>
           <Switch>
@@ -133,6 +139,16 @@ function AppRoutes() {
                   <Route path="/settings">
                     <RoleRoute roles={["superuser"]}>
                       <SettingsPage />
+                    </RoleRoute>
+                  </Route>
+                  <Route path="/sms-gateways">
+                    <RoleRoute roles={["superuser"]}>
+                      <SmsGatewayPage />
+                    </RoleRoute>
+                  </Route>
+                  <Route path="/about-system">
+                    <RoleRoute roles={["superuser"]}>
+                      <AboutSystemPage />
                     </RoleRoute>
                   </Route>
                   <Route path="/profile" component={ProfilePage} />

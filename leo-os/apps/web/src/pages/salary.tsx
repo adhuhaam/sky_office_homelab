@@ -894,6 +894,16 @@ function AdminSalaryPage() {
         icon={DollarSign}
         title="Monthly salaries"
         description="Generate salaries each month, confirm them, then create invoices in Billing"
+        action={
+          records.length > 0 ? (
+            <Link href={`/salary/sheet?month=${filterMonth}&year=${filterYear}`}>
+              <Button variant="outline" size="sm" className="gap-1.5">
+                <FileText className="h-4 w-4" />
+                View salary sheet
+              </Button>
+            </Link>
+          ) : null
+        }
       />
 
       <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-card-border bg-card px-3 py-2.5 text-sm font-medium">
@@ -1067,8 +1077,11 @@ function AdminSalaryPage() {
                       </Button>
                     </Link>
                   )}
-                  {record?.invoiceId ? (
-                    <Link href={`/billing/${record.invoiceId}`} className="flex-1">
+                  {hasSalary ? (
+                    <Link
+                      href={`/salary/${record!.id}/payslip?month=${filterMonth}&year=${filterYear}`}
+                      className="flex-1"
+                    >
                       <Button variant="outline" size="sm" className="w-full gap-1.5">
                         <ExternalLink className="h-3.5 w-3.5" />
                         View

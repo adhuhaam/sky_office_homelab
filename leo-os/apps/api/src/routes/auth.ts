@@ -4,10 +4,9 @@ import {
   type Request,
   type Response,
 } from "express";
-import { randomBytes } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
-import { db, usersTable, appSettingsTable } from "@leo/db";
+import { db, usersTable } from "@leo/db";
 import { hashPassword, verifyPasswordHash } from "../lib/crypto.js";
 import { store } from "../lib/session.js";
 import { populateFromBearerToken } from "../middleware/require-auth.js";
@@ -329,46 +328,6 @@ router.post("/auth/change-password", async (req, res): Promise<void> => {
     .where(eq(usersTable.id, userId));
 
   res.sendStatus(204);
-});
-
-router.get("/auth/extension-token", async (req, res): Promise<void> => {
-  if (!req.session?.authenticated) {
-    res.status(401).json({ error: "Authentication required" });
-    return;
-  }
-  const rows = await db
-    .select({ extensionToken: appSettingsTable.extensionToken })
-    .from(appSettingsTable)
-    .where(eq(appSettingsTable.id, 1))
-    .limit(1);
-  let token = rows[0]?.extensionToken ?? null;
-  if (!token) {
-    token = randomBytes(32).toString("hex");
-    await db
-      .insert(appSettingsTable)
-      .values({ id: 1, extensionToken: token })
-      .onConflictDoUpdate({
-        target: appSettingsTable.id,
-        set: { extensionToken: token },
-      });
-  }
-  res.json({ token });
-});
-
-router.post("/auth/extension-token/regenerate", async (req, res): Promise<void> => {
-  if (!req.session?.authenticated) {
-    res.status(401).json({ error: "Authentication required" });
-    return;
-  }
-  const token = randomBytes(32).toString("hex");
-  await db
-    .insert(appSettingsTable)
-    .values({ id: 1, extensionToken: token })
-    .onConflictDoUpdate({
-      target: appSettingsTable.id,
-      set: { extensionToken: token },
-    });
-  res.json({ token });
 });
 
 export default router;

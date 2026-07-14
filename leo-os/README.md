@@ -42,10 +42,13 @@ Stack: **leo-proxy** (TLS) → **react-app** (nginx static) → **leo-api** → 
 
 ## Documentation
 
+**Canonical system docs** (homelab + application): [`/home/adhuhaam/apps/docs/`](../docs/)
+
 | Doc | Contents |
 |-----|----------|
-| [docs/FEATURES.md](docs/FEATURES.md) | Every module: dashboard, OCR, LOA, billing, salary, expenses, passwords, Xpat alerts, PWA, mobile |
-| [docs/WORKFLOWS.md](docs/WORKFLOWS.md) | End-to-end flows: new employee OCR, salary→invoice, work permits, company setup |
+| [../docs/README.md](../docs/README.md) | Index for the full documentation set |
+| [docs/FEATURES.md](docs/FEATURES.md) | App-focused module notes (also covered in `apps/docs`) |
+| [docs/WORKFLOWS.md](docs/WORKFLOWS.md) | End-to-end flows |
 | [docs/DATA-MODEL.md](docs/DATA-MODEL.md) | Database tables, relationships, API joins |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Auth, API routes, OCR pipeline, shared packages |
 | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Deploy web, API, mobile, env vars, checklist |

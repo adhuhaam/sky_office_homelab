@@ -1,8 +1,9 @@
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
-import { db, appSettingsTable } from "@leo/db";
+import { db, appSettingsTable, getPool } from "@leo/db";
 import { requireAuth, requireRole } from "../middleware/require-auth.js";
+import os from "node:os";
 
 const router: IRouter = Router();
 
@@ -111,6 +112,114 @@ router.get("/system/settings", requireAuth, requireRole("superuser"), async (_re
   const row = await readSettings();
   res.json(settingsShape(row));
 });
+
+router.get(
+  "/system/about",
+  requireAuth,
+  requireRole("superuser"),
+  async (_req, res): Promise<void> => {
+    const startedAt = Date.now();
+    let database: { status: "ok" | "error"; latencyMs: number; error?: string } = {
+      status: "ok",
+      latencyMs: 0,
+    };
+    try {
+      const t0 = Date.now();
+      await getPool().query("select 1 as ok");
+      database = { status: "ok", latencyMs: Date.now() - t0 };
+    } catch (err) {
+      database = {
+        status: "error",
+        latencyMs: Date.now() - startedAt,
+        error: err instanceof Error ? err.message : "Database unreachable",
+      };
+    }
+
+    let appName = "Sky Office";
+    try {
+      const row = await readSettings();
+      appName = row.appName || appName;
+    } catch {
+      /* ignore */
+    }
+
+    const mem = process.memoryUsage();
+    const cpus = os.cpus();
+    const load = os.loadavg();
+
+    res.json({
+      generatedAt: new Date().toISOString(),
+      health: {
+        api: "ok" as const,
+        database: database.status,
+        databaseLatencyMs: database.latencyMs,
+        databaseError: database.error ?? null,
+        overall: database.status === "ok" ? ("healthy" as const) : ("degraded" as const),
+      },
+      application: {
+        name: appName,
+        product: "Sky Office (LEO OS)",
+        environment: process.env["NODE_ENV"] ?? "development",
+        apiRuntime: "express",
+        rewriteRuntime: "aspnetcore (parallel, not cut over)",
+      },
+      server: {
+        hostname: os.hostname(),
+        platform: os.platform(),
+        arch: os.arch(),
+        release: os.release(),
+        type: os.type(),
+        uptimeSeconds: Math.floor(os.uptime()),
+        processUptimeSeconds: Math.floor(process.uptime()),
+        nodeVersion: process.version,
+        pid: process.pid,
+        cwd: process.cwd(),
+        cpuModel: cpus[0]?.model ?? null,
+        cpuCount: cpus.length,
+        loadAverage: {
+          "1m": Number(load[0]?.toFixed(2) ?? 0),
+          "5m": Number(load[1]?.toFixed(2) ?? 0),
+          "15m": Number(load[2]?.toFixed(2) ?? 0),
+        },
+        memory: {
+          totalBytes: os.totalmem(),
+          freeBytes: os.freemem(),
+          processRssBytes: mem.rss,
+          processHeapUsedBytes: mem.heapUsed,
+        },
+      },
+      stack: {
+        languages: [
+          { name: "TypeScript", role: "Primary application language" },
+          { name: "JavaScript (Node)", role: "API runtime" },
+          { name: "SQL (PostgreSQL)", role: "Persistence" },
+          { name: "C#", role: "ASP.NET Core rewrite (in progress)" },
+        ],
+        runtimes: [
+          { name: "Node.js", version: process.version },
+          { name: "React", version: "19" },
+          { name: "Express", version: "5" },
+          { name: "PostgreSQL", version: "17" },
+          { name: "Expo / React Native", version: "54" },
+          { name: ".NET", version: "8 (side-by-side API)" },
+        ],
+        toolchain: [
+          { name: "pnpm", role: "Monorepo package manager" },
+          { name: "Vite", role: "Web build / PWA" },
+          { name: "Drizzle ORM", role: "Schema & queries" },
+          { name: "Docker Compose", role: "Homelab deployment" },
+          { name: "nginx", role: "TLS proxy + static SPA" },
+          { name: "Tailscale", role: "Private remote access" },
+        ],
+      },
+      access: {
+        lan: "https://192.168.18.150/",
+        tailscale: "http://100.126.222.96/",
+        mobileApi: "http://100.126.222.96",
+      },
+    });
+  },
+);
 
 router.patch("/system/settings", requireAuth, requireRole("superuser"), async (req, res): Promise<void> => {
   const parsed = UpdateBody.safeParse(req.body);

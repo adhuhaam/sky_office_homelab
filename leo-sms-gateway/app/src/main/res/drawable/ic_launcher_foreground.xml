@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Chat bubble representing SMS -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,24C35.2,24 20,36.5 20,51.8C20,60.5 24.6,68.2 32,73.6L30,88L46.5,79.2C48.9,79.7 51.4,80 54,80C72.8,80 88,67.5 88,52.2C88,36.9 72.8,24 54,24Z" />
+    <!-- Three dots -->
+    <circle android:fillColor="#1E293B" android:cx="42" android:cy="52" android:r="4" />
+    <circle android:fillColor="#1E293B" android:cx="54" android:cy="52" android:r="4" />
+    <circle android:fillColor="#1E293B" android:cx="66" android:cy="52" android:r="4" />
+</vector>

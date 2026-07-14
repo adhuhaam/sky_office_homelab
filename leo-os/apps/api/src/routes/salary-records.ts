@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, and, asc, isNull, type SQL } from "drizzle-orm";
 import { z } from "zod";
-import { db, salaryRecordsTable, passportsTable, loaTable } from "@leo/db";
+import { db, salaryRecordsTable, passportsTable, loaTable, companiesTable } from "@leo/db";
 import { requireRole } from "../middleware/require-auth.js";
 import { normalizeMoney, computeNetSalary, salaryDays } from "../lib/money.js";
 
@@ -52,6 +52,14 @@ function shape(
     passportNumber?: string | null;
     employeeType?: string | null;
     jobTitle?: string | null;
+    agencySalary?: string | null;
+    companyId?: number | null;
+    companyName?: string | null;
+    companyAddress?: string | null;
+    companyEmail?: string | null;
+    companyPhone?: string | null;
+    companySignatoryName?: string | null;
+    companySignatoryDesignation?: string | null;
   },
 ) {
   return {
@@ -126,9 +134,18 @@ router.get("/salary-records", async (req, res): Promise<void> => {
       passportNumber: passportsTable.passportNumber,
       employeeType: passportsTable.employeeType,
       jobTitle: loaTable.jobTitle,
+      agencySalary: passportsTable.agencySalary,
+      companyId: passportsTable.companyId,
+      companyName: companiesTable.name,
+      companyAddress: companiesTable.address,
+      companyEmail: companiesTable.email,
+      companyPhone: companiesTable.phone,
+      companySignatoryName: companiesTable.signatoryName,
+      companySignatoryDesignation: companiesTable.signatoryDesignation,
     })
     .from(salaryRecordsTable)
     .leftJoin(passportsTable, eq(salaryRecordsTable.passportId, passportsTable.id))
+    .leftJoin(companiesTable, eq(passportsTable.companyId, companiesTable.id))
     .leftJoin(loaTable, eq(loaTable.passportId, passportsTable.id))
     .where(conds.length ? and(...conds) : undefined)
     .orderBy(asc(salaryRecordsTable.year), asc(salaryRecordsTable.month));

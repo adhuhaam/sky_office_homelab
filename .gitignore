@@ -7,6 +7,8 @@
 node_modules/
 dist/
 *.tsbuildinfo
+bin/
+obj/
 
 # Database data
 postgresql/data/
@@ -40,3 +42,18 @@ leo-os/apps/web/public/favicon.ico
 
 # Cursor local (optional)
 .cursor/
+
+# .NET
+*.user
+*.suo
+.vs/
+
+# Android
+**/local.properties
+**/.gradle/
+**/build/
+**/captures/
+*.apk
+*.aab
+*.keystore
+!debug.keystore

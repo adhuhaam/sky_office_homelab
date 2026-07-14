@@ -17,9 +17,6 @@ import {
   Check,
   Pencil,
   Tag,
-  Copy,
-  RefreshCw,
-  Puzzle,
   KeyRound,
 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
@@ -575,8 +572,6 @@ function SystemSection() {
 
       <PasswordCard hasCustomPassword={data?.hasCustomPassword ?? false} />
 
-      <ExtensionTokenCard />
-
       <div className="sticky bottom-4 flex justify-end">
         <Button onClick={save} disabled={saving} size="lg" className="shadow-lg">
           {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
@@ -584,99 +579,6 @@ function SystemSection() {
         </Button>
       </div>
     </div>
-  );
-}
-
-function ExtensionTokenCard() {
-  const { toast } = useToast();
-  const [token, setToken] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [regenerating, setRegenerating] = useState(false);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await apiFetch<{ token: string }>("/auth/extension-token");
-      setToken(res.token);
-    } catch (err) {
-      toast({
-        title: "Failed to load extension token",
-        description: err instanceof ApiError ? err.message : "",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [toast]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
-
-  async function regenerate() {
-    setRegenerating(true);
-    try {
-      const res = await apiFetch<{ token: string }>("/auth/extension-token/regenerate", {
-        method: "POST",
-      });
-      setToken(res.token);
-      toast({ title: "Extension token regenerated" });
-    } catch (err) {
-      toast({
-        title: "Failed to regenerate token",
-        description: err instanceof ApiError ? err.message : "",
-        variant: "destructive",
-      });
-    } finally {
-      setRegenerating(false);
-    }
-  }
-
-  async function copyToken() {
-    if (!token) return;
-    try {
-      await navigator.clipboard.writeText(token);
-      toast({ title: "Copied to clipboard" });
-    } catch {
-      toast({ title: "Copy failed", variant: "destructive" });
-    }
-  }
-
-  return (
-    <Card className="border-card-border shadow-sm">
-      <CardHeader className="pb-4">
-        <CardTitle className="text-base flex items-center gap-2">
-          <Puzzle className="h-4 w-4 text-primary" /> Browser extension
-        </CardTitle>
-        <CardDescription>
-          Token used by the LEO Chrome extension to authenticate API requests.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {loading ? (
-          <div className="flex justify-center py-4">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-          </div>
-        ) : (
-          <>
-            <div className="flex items-center gap-2">
-              <Input readOnly value={token ?? ""} className="font-mono text-xs" />
-              <Button type="button" variant="outline" size="icon" onClick={() => void copyToken()} disabled={!token}>
-                <Copy className="h-4 w-4" />
-              </Button>
-            </div>
-            <Button type="button" variant="outline" size="sm" onClick={() => void regenerate()} disabled={regenerating}>
-              {regenerating ? (
-                <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
-              ) : (
-                <RefreshCw className="h-3.5 w-3.5 mr-1" />
-              )}
-              Regenerate token
-            </Button>
-          </>
-        )}
-      </CardContent>
-    </Card>
   );
 }
 

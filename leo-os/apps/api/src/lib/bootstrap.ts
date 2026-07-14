@@ -21,9 +21,6 @@ export async function bootstrap(): Promise<void> {
 
 async function ensureSchemaExtensions(): Promise<void> {
   await db.execute(sql`
-    ALTER TABLE app_settings ADD COLUMN IF NOT EXISTS extension_token TEXT
-  `);
-  await db.execute(sql`
     ALTER TABLE app_settings ADD COLUMN IF NOT EXISTS password_hash TEXT
   `);
   await db.execute(sql`

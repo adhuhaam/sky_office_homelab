@@ -1,4 +1,6 @@
 services:
+  # Legacy Express API — not used in production after .NET cutover.
+  # Rollback: restore this service name as leo-api in root compose if needed.
   leo-api:
     build:
       context: ../leo-os

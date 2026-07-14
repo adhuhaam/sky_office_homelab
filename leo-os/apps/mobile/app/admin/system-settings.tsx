@@ -17,13 +17,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import {
   getGetSystemSettingsQueryKey,
-  getGetExtensionTokenQueryKey,
   useGetSystemSettings,
-  useGetExtensionToken,
-  useRegenerateExtensionToken,
   useUpdateSystemSettings,
 } from "@leo/api-client-react";
-import * as Clipboard from "expo-clipboard";
 import { useQueryClient } from "@tanstack/react-query";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/lib/auth";
@@ -265,8 +261,6 @@ export default function SystemSettingsScreen() {
               />
             </Section>
 
-            <ExtensionTokenSection colors={colors} />
-
             {dirty && (
               <Pressable
                 onPress={save}
@@ -284,78 +278,6 @@ export default function SystemSettingsScreen() {
         )}
       </KeyboardAvoidingView>
     </SafeAreaView>
-  );
-}
-
-function ExtensionTokenSection({ colors }: { colors: ReturnType<typeof useColors> }) {
-  const qc = useQueryClient();
-  const { data, isLoading } = useGetExtensionToken({
-    query: { queryKey: getGetExtensionTokenQueryKey(), staleTime: 30_000 },
-  });
-  const regenerate = useRegenerateExtensionToken();
-
-  async function copyToken() {
-    const token = data?.token;
-    if (!token) return;
-    await Clipboard.setStringAsync(token);
-    Alert.alert("Copied", "Extension token copied to clipboard.");
-  }
-
-  async function onRegenerate() {
-    Alert.alert("Regenerate token?", "The old token will stop working immediately.", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Regenerate",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await regenerate.mutateAsync();
-            await qc.invalidateQueries({ queryKey: getGetExtensionTokenQueryKey() });
-          } catch {
-            Alert.alert("Error", "Could not regenerate extension token.");
-          }
-        },
-      },
-    ]);
-  }
-
-  return (
-    <Section label="BROWSER EXTENSION" colors={colors}>
-      <View style={[styles.fieldWrap, { borderBottomWidth: 0, gap: 10, paddingVertical: 14 }]}>
-        <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>
-          API token for the LEO Chrome extension
-        </Text>
-        {isLoading ? (
-          <ActivityIndicator color={colors.primary} />
-        ) : (
-          <>
-            <Text
-              selectable
-              style={[styles.extensionToken, { color: colors.foreground, backgroundColor: colors.secondary }]}
-            >
-              {data?.token ?? "—"}
-            </Text>
-            <View style={styles.extensionActions}>
-              <Pressable
-                onPress={() => void copyToken()}
-                style={[styles.extensionBtn, { backgroundColor: colors.secondary }]}
-              >
-                <Feather name="copy" size={16} color={colors.foreground} />
-                <Text style={{ color: colors.foreground, fontSize: 13 }}>Copy</Text>
-              </Pressable>
-              <Pressable
-                onPress={() => void onRegenerate()}
-                disabled={regenerate.isPending}
-                style={[styles.extensionBtn, { backgroundColor: colors.secondary, opacity: regenerate.isPending ? 0.6 : 1 }]}
-              >
-                <Feather name="refresh-cw" size={16} color={colors.foreground} />
-                <Text style={{ color: colors.foreground, fontSize: 13 }}>Regenerate</Text>
-              </Pressable>
-            </View>
-          </>
-        )}
-      </View>
-    </Section>
   );
 }
 
@@ -469,21 +391,4 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   saveBarText: { fontSize: 15, color: "#fff" },
-  extensionToken: {
-    fontSize: 11,
-    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
-    padding: 12,
-    borderRadius: 10,
-    overflow: "hidden",
-  },
-  extensionActions: { flexDirection: "row", gap: 10 },
-  extensionBtn: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 10,
-    borderRadius: 10,
-  },
 });

@@ -26,10 +26,6 @@ export interface UserProfile {
   companyId?: number | null;
 }
 
-export interface ExtensionToken {
-  token: string;
-}
-
 export interface AdminUser {
   id: number;
   email: string;
@@ -994,6 +990,16 @@ export interface SalaryRecord {
   clientSalary?: string;
   employeeType?: string | null;
   jobTitle?: string | null;
+  /** Employee daily rate from master list (passport agencySalary) */
+  agencySalary?: string | null;
+  /** Recruiting company the employee belongs to */
+  companyId?: number | null;
+  companyName?: string | null;
+  companyAddress?: string | null;
+  companyEmail?: string | null;
+  companyPhone?: string | null;
+  companySignatoryName?: string | null;
+  companySignatoryDesignation?: string | null;
 }
 
 export interface CreateSalaryRecord {

@@ -1,9 +1,53 @@
 import type { SalaryRecord } from "@leo/api-client-react";
 
-const MONTHS_LONG = [
+export const MONTHS_LONG = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
 ];
+
+export function fmtSalaryMVR(val: string | number | null | undefined): string {
+  const n = Number(val ?? "0");
+  if (val == null || val === "" || !Number.isFinite(n)) return "MVR —";
+  return `MVR ${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+export function salaryMonthLabel(month: number, year: number): string {
+  return `${MONTHS_LONG[(month - 1) % 12] ?? ""} ${year}`;
+}
+
+export function computeBasicEarnings(record: SalaryMoneyFields): number {
+  return moneyNum(record.basicSalary) * salaryDays(record.daysWorked);
+}
+
+/** Master-list employee daily rate (agencySalary), then salary record basicSalary. */
+export function resolveEmployeeDailyRate(
+  record: SalaryMoneyFields & { agencySalary?: string | null },
+): number {
+  const masterRate = moneyNum(record.agencySalary);
+  if (masterRate > 0) return masterRate;
+  return moneyNum(record.basicSalary);
+}
+
+/** Payslip/sheet net using master-list daily rate × days + allowances − deductions. */
+export function computePayslipEmployeeNet(
+  record: SalaryMoneyFields & { agencySalary?: string | null },
+): number {
+  const days = salaryDays(record.daysWorked);
+  return (
+    resolveEmployeeDailyRate(record) * days +
+    moneyNum(record.foodAllowance) +
+    moneyNum(record.transportAllowance) +
+    moneyNum(record.otherAllowances) +
+    moneyNum(record.otherExpenses) -
+    moneyNum(record.deductions)
+  );
+}
+
+export function computePayslipBasicEarnings(
+  record: SalaryMoneyFields & { agencySalary?: string | null },
+): number {
+  return resolveEmployeeDailyRate(record) * salaryDays(record.daysWorked);
+}
 
 export type SalaryWorkflowStatus = "none" | "draft" | "confirmed" | "invoiced";
 
