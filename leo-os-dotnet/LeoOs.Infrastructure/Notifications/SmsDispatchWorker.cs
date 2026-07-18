@@ -8,23 +8,32 @@ namespace LeoOs.Infrastructure.Notifications;
 
 public static class NotificationSchemaBootstrap
 {
+    private static readonly string[] Scripts =
+    {
+        "LeoOs.Infrastructure.Sql.001_sms_notifications.sql",
+        "LeoOs.Infrastructure.Sql.002_sms_gateway_default.sql",
+    };
+
     public static async Task EnsureCreatedAsync(IServiceProvider sp, CancellationToken ct = default)
     {
         using var scope = sp.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<LeoOsDbContext>();
         var asm = typeof(NotificationSchemaBootstrap).Assembly;
-        await using var stream = asm.GetManifestResourceStream("LeoOs.Infrastructure.Sql.001_sms_notifications.sql")
-            ?? throw new InvalidOperationException("Embedded SQL 001_sms_notifications.sql not found");
-        using var reader = new StreamReader(stream);
-        var sql = await reader.ReadToEndAsync(ct);
 
-        // Use ADO.NET — EF ExecuteSqlRaw treats `{name}` in template seeds as format args.
         var conn = db.Database.GetDbConnection();
         if (conn.State != System.Data.ConnectionState.Open)
             await db.Database.OpenConnectionAsync(ct);
-        await using var cmd = conn.CreateCommand();
-        cmd.CommandText = sql;
-        await cmd.ExecuteNonQueryAsync(ct);
+
+        foreach (var resource in Scripts)
+        {
+            await using var stream = asm.GetManifestResourceStream(resource)
+                ?? throw new InvalidOperationException($"Embedded SQL {resource} not found");
+            using var reader = new StreamReader(stream);
+            var sql = await reader.ReadToEndAsync(ct);
+            await using var cmd = conn.CreateCommand();
+            cmd.CommandText = sql;
+            await cmd.ExecuteNonQueryAsync(ct);
+        }
     }
 }
 

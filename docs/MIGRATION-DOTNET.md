@@ -1,17 +1,14 @@
 # Migration: Express → ASP.NET Core
 
-## Status: cut over (2026-07-14)
+## Status: complete — Express source removed (2026-07-18)
 
-ASP.NET Core is the **primary API**. Express `leo-api` is retired from the request path (Dockerfile retained for rollback).
+ASP.NET Core is the **only** API. The Express package `leo-os/apps/api` (`@leo/api`) and its Docker fragment have been **deleted** from the tree. Restore from git history if ever needed (`backup/pre-dotnet-20260714` or pre-removal commits).
 
 | Phase | Status |
 |-------|--------|
 | 0 Backup | Done — [BACKUP-AND-RESTORE.md](BACKUP-AND-RESTORE.md) |
-| 1 Docs | Done |
-| 2 Scaffold + health | Done — `leo-os-dotnet/` |
-| 3 Auth parity | Done |
-| 3+ Domain ports | Done — companies, clients, passports/OCR, LOA, billing, salary, expenses, tasks, admin, system, Xpat, public |
-| 4 Compose cutover | Done — `leo-api-dotnet` + nginx `/api/` |
+| 1–4 Cutover | Done — `leo-api-dotnet` + nginx `/api/` |
+| 5 Remove Express source | Done — `leo-os/apps/api` deleted |
 
 ## Production stack
 
@@ -20,9 +17,9 @@ react-app nginx  →  leo-api-dotnet:8080  →  postgres (leoos)
 ```
 
 Compose service: `leo-api-dotnet` (build context `leo-os-dotnet/`).  
-Env: same `api/.env` (`DATABASE_URL` host `postgres`, `PORT=8080`, `SESSION_SECRET`, OCR keys).
+Env: `/home/adhuhaam/apps/api/.env` (`DATABASE_URL` host `postgres`, `PORT=8080`, `SESSION_SECRET`, OCR keys).
 
-## Local / side-by-side
+## Local
 
 ```bash
 bash /home/adhuhaam/apps/scripts/run-dotnet-api.sh
@@ -35,17 +32,19 @@ bash /home/adhuhaam/apps/scripts/run-dotnet-api.sh
 apps/leo-os-dotnet/
   Dockerfile
   LeoOs.sln
-  LeoOs.Api/                 # Controllers, session + permissions middleware, OCR
-  LeoOs.Infrastructure/      # EF Core entities, scrypt, money, permissions
+  LeoOs.Api/                 # Controllers, session + permissions, OCR, SignalR hub
+  LeoOs.Infrastructure/      # EF Core, scrypt, money, permissions, Notifications
 ```
 
-## Rollback to Express
+## Rollback
 
-1. Point `react/nginx/default.conf` `proxy_pass` back to `http://leo-api:8080`.
-2. Restore `leo-api` service in `docker-compose.yml` (build `leo-os` / `apps/api/Dockerfile`).
-3. `docker compose up -d --build --force-recreate leo-api react` and stop `leo-api-dotnet`.
+Express is no longer in the working tree. To restore:
 
-Backup tag: `backup/pre-dotnet-20260714`.
+1. `git checkout <commit-before-removal> -- leo-os/apps/api`
+2. Re-add a `leo-api` compose service pointing at that Dockerfile
+3. Point nginx `proxy_pass` to `http://leo-api:8080` and stop `leo-api-dotnet`
+
+Prefer fixing `.NET` instead of rolling back.
 
 ## GitHub
 

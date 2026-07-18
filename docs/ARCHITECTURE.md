@@ -71,18 +71,19 @@ Config mounts:
 
 | Package | Path | Role |
 |---------|------|------|
-| `@leo/api` | `apps/api` | Legacy Express (rollback only) |
-| `@leo/web` | `apps/web` | Vite React admin UI (PWA) |
-| `@leo/mobile` | `apps/mobile` | Expo React Native app |
-| `@leo/db` | `packages/db` | Drizzle schema + `getPool()` |
+| `@leo/web` | `apps/web` | React PWA |
+| `@leo/mobile` | `apps/mobile` | Expo (reference until native parity) |
+| `@leo/db` | `packages/db` | Drizzle schema **reference** (EF Core is live ORM) |
 | `@leo/api-client-react` | `packages/api-client-react` | Shared TanStack Query hooks / types |
+
+Express `@leo/api` has been **removed**. Live API: `leo-os-dotnet/`.
 
 ```mermaid
 flowchart LR
   web["@leo/web"] --> client["@leo/api-client-react"]
   mobile["@leo/mobile"] --> client
-  api["@leo/api"] --> db["@leo/db"]
-  client -.->|HTTP| api
+  client -.->|HTTP| dotnet["leo-api-dotnet"]
+  dotnet --> postgres[(postgres)]
 ```
 
 ## API internals
@@ -92,14 +93,13 @@ Primary: `leo-os-dotnet/LeoOs.Api` (controllers + session/permissions middleware
 - **CORS** — multi-origin from `CORS_ORIGIN`; credentials enabled
 - **Forwarded headers** — behind nginx
 - **Body limit** — Kestrel 20 MB; nginx upload 20 MB for passport files
-- **Sessions** — cookie `leo.sid` + `session` table (connect-pg-simple compatible)
-- Express source retained under `leo-os/apps/api` for rollback reference
+- **Sessions** — cookie `leo.sid` + `session` table (connect-pg-simple compatible wire format)
 
 Auth and public routes: [AUTH.md](AUTH.md) · [API.md](API.md).
 
 ## OCR pipeline
 
-`.NET` `OcrService` (+ Node `apps/api/src/lib/ocr.ts` for reference):
+`.NET` `OcrService`:
 
 1. Call vision chat/completions with structured JSON prompt (OpenAI-compatible)
 2. Persist to `passports`; on hard failure delete draft row
@@ -108,14 +108,14 @@ Config order: Settings UI (`app_settings`) → env `OPENAI_*` / `DEEPSEEK_*`.
 
 ## Xpat integration
 
-`.NET` `XpatController` (+ Node `lib/xpat.ts` for reference):
+`.NET` `XpatController`:
 
 - Live work-permit status, photo, card
 - Dashboard alerts: `GET /api/passports/work-permit-alerts`
 
 ## Money math (single source of truth)
 
-`LeoOs.Infrastructure/Services/Money.cs` (Node `money.ts` mirrored for web labels):
+`LeoOs.Infrastructure/Services/Money.cs`:
 
 - `netSalary = basicSalary × daysWorked + allowances − deductions + otherExpenses`
 - `clientBillTotal = clientSalary × daysWorked`
@@ -127,13 +127,11 @@ Config order: Settings UI (`app_settings`) → env `OPENAI_*` / `DEEPSEEK_*`.
 - PWA: `vite-plugin-pwa`, service worker update prompt
 - Role gates in `App.tsx` / `protected-route.tsx`
 
-## Mobile app
+## Mobile apps
 
-- Expo Router under `apps/mobile/app/`
-- Bearer token from `GET /api/auth/mobile-token`, stored in Secure Store
-- `EXPO_PUBLIC_API_URL` (production: `http://100.126.222.96`)
-- Android cleartext HTTP enabled for Tailscale IP
-- Print flows open web print URLs in browser
+- Native admin: `leo-android/` (Compose) — preferred for field use
+- SMS nodes: `leo-sms-gateway/`
+- Expo `apps/mobile/` — reference only until parity QA
 
 ## Nginx layers
 
@@ -149,17 +147,17 @@ Config order: Settings UI (`app_settings`) → env `OPENAI_*` / `DEEPSEEK_*`.
 **react-app** (`react/nginx/default.conf`):
 
 - `/api/` → `http://leo-api-dotnet:8080`
+- `/hubs/` → SignalR WebSocket upgrade → `leo-api-dotnet`
 - `/` → SPA `try_files`
 - No-cache headers for SW / workbox / manifest
 
-Legacy host nginx (`infra/nginx/leo-os.conf`) is **inactive** when Docker leo-proxy owns 80/443.
+## ASP.NET Core API
 
-## ASP.NET Core API (primary)
-
-Production upstream is `leo-api-dotnet` (`apps/leo-os-dotnet/`). Same Postgres schema and `/api/*` contract. Express Dockerfile kept for rollback. See [MIGRATION-DOTNET.md](MIGRATION-DOTNET.md).
+Production upstream is `leo-api-dotnet` (`apps/leo-os-dotnet/`). Same Postgres schema and `/api/*` contract. See [MIGRATION-DOTNET.md](MIGRATION-DOTNET.md).
 
 ## Related
 
 - [API.md](API.md) — route table
 - [DATA-MODEL.md](DATA-MODEL.md) — schema
 - [DEPLOYMENT.md](DEPLOYMENT.md) — how artifacts are built and shipped
+- [SMS-GATEWAY.md](SMS-GATEWAY.md) — SMS nodes + SignalR

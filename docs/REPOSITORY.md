@@ -37,7 +37,7 @@ apps/
 │   ├── stop-casaos.sh        # Free ports 80/443
 │   ├── setup-host.sh         # Legacy host setup (superseded)
 │   └── run-dotnet-api.sh     # Local ASP.NET API (:5080)
-├── leo-os/                   # pnpm monorepo (web + Expo reference + legacy Express)
+├── leo-os/                   # pnpm monorepo (web + Expo reference)
 ├── leo-os-dotnet/            # Primary ASP.NET Core API (+ SMS/Notification)
 ├── leo-android/              # Native admin Compose app
 └── leo-sms-gateway/          # Android SIM SMS gateway
@@ -52,14 +52,13 @@ leo-os/
 ├── package.json              # Root scripts: build, typecheck, deploy:web, mobile:*
 ├── pnpm-workspace.yaml       # packages/*, apps/*
 ├── AGENTS.md                 # Contributor / AI conventions
-├── README.md                 # App-oriented readme
-├── docs/                     # Older app-focused docs (prefer apps/docs)
+├── README.md
+├── docs/README.md            # Pointer to apps/docs
 ├── apps/
-│   ├── api/                  # @leo/api — Express (legacy / rollback)
 │   ├── web/                  # @leo/web — Vite React PWA
-│   └── mobile/               # @leo/mobile — Expo
+│   └── mobile/               # @leo/mobile — Expo (reference)
 └── packages/
-    ├── db/                   # @leo/db — Drizzle schema + pool
+    ├── db/                   # @leo/db — Drizzle schema reference
     └── api-client-react/     # Shared React Query client
 ```
 

@@ -16,7 +16,7 @@ services:
     networks:
       - homelab
 
-  # Primary API: ASP.NET Core (Express leo-api retired; Dockerfile kept at leo-os/apps/api for rollback)
+  # Primary API: ASP.NET Core (Express package removed from tree)
   leo-api-dotnet:
     build:
       context: ./leo-os-dotnet

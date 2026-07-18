@@ -34,7 +34,7 @@ Checks: API `middleware/require-auth.ts` + `lib/permissions.js`; web `protected-
 ## Passport OCR & upload (`/upload`)
 
 **Web / mobile / API:** `pages/upload.tsx`, mobile `(tabs)/upload`, `POST /api/passports/upload`  
-**OCR:** `apps/api/src/lib/ocr.ts`
+**OCR:** `leo-os-dotnet` `OcrService`
 
 ### Wizard (web — 4 steps)
 

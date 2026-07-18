@@ -18,5 +18,6 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Sql\001_sms_notifications.sql" />
+    <EmbeddedResource Include="Sql\002_sms_gateway_default.sql" />
   </ItemGroup>
 </Project>

@@ -133,6 +133,18 @@ fun SettingsScreen(
                     LabelValue("Name", state.gatewayName.ifBlank { "—" })
                     LabelValue("Gateway ID", state.gatewayId.ifBlank { "—" })
                     LabelValue("Gateway Key", if (state.gatewayKey.isNotBlank()) "••••••••" else "—")
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "Default vs standby is chosen only in web SMS Gateways (superuser). This app never sets the global default.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        "Tip: disable battery optimization for reliable heartbeats (Xiaomi / Samsung).",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
 

@@ -8,6 +8,7 @@ import android.telephony.TelephonyManager
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.leo.smsgateway.data.preferences.AppPreferences
+import com.leo.smsgateway.data.remote.ApiService
 import com.leo.smsgateway.service.ConnectionState
 import com.leo.smsgateway.service.GatewaySmsService
 import com.leo.smsgateway.service.ServiceStatus
@@ -20,6 +21,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import javax.inject.Inject
 
 data class DashboardUiState(
@@ -28,6 +30,9 @@ data class DashboardUiState(
     val gatewayName: String = "",
     val serverUrl: String = "",
     val gatewayId: String = "",
+    val gatewayKey: String = "",
+    val isDefault: Boolean = false,
+    val nodeRole: String = "standby",
     val batteryLevel: Int = 0,
     val isCharging: Boolean = false,
     val simOperator: String = "Unknown",
@@ -36,12 +41,14 @@ data class DashboardUiState(
     val sentToday: Int = 0,
     val failedToday: Int = 0,
     val lastError: String? = null,
+    val permissionsHint: Boolean = true,
 )
 
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val appPreferences: AppPreferences,
+    private val apiService: ApiService,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
@@ -51,6 +58,7 @@ class DashboardViewModel @Inject constructor(
         collectServiceStatus()
         collectDeviceInfo()
         loadGatewayPrefs()
+        pollConfig()
     }
 
     private fun collectServiceStatus() {
@@ -86,15 +94,49 @@ class DashboardViewModel @Inject constructor(
                         gatewayName = p.gatewayName,
                         serverUrl = p.serverUrl,
                         gatewayId = p.gatewayId,
+                        gatewayKey = p.gatewayKey,
                     )
                 }
             }
         }
     }
 
+    private fun pollConfig() {
+        viewModelScope.launch {
+            while (isActive) {
+                refreshConfig()
+                delay(15_000)
+            }
+        }
+    }
+
+    fun refreshConfig() {
+        viewModelScope.launch {
+            try {
+                val prefs = appPreferences.getPrefsSnapshot()
+                if (!prefs.isRegistered || prefs.serverUrl.isBlank()) return@launch
+                val url =
+                    "${prefs.serverUrl}/api/gateway/config?gatewayId=${prefs.gatewayId}&gatewayKey=${prefs.gatewayKey}"
+                val resp = apiService.getConfig(url)
+                if (resp.isSuccessful) {
+                    val body = resp.body()
+                    if (body != null) {
+                        _uiState.update {
+                            it.copy(
+                                isDefault = body.isDefault,
+                                nodeRole = if (body.isDefault) "default" else (body.role.ifBlank { "standby" }),
+                            )
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                Timber.w(e, "Failed to refresh gateway config")
+            }
+        }
+    }
+
     private fun collectDeviceInfo() {
         viewModelScope.launch {
-            // Populate immediately, then refresh every 10 s
             updateDeviceInfo()
             while (isActive) {
                 delay(10_000)
@@ -154,6 +196,7 @@ class DashboardViewModel @Inject constructor(
         viewModelScope.launch {
             delay(500)
             GatewaySmsService.start(context)
+            refreshConfig()
         }
     }
 

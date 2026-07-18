@@ -22,6 +22,7 @@ public sealed class PassportsController : ControllerBase
     private readonly IHttpClientFactory _httpFactory;
     private readonly ILogger<PassportsController> _logger;
     private readonly INotificationService _notifications;
+    private readonly IOrgSmsFollowUp _orgSms;
 
     private const string XpatBase = "https://mobile-xpat.egov.mv/api/v1";
     private const string XpatApiKey = "d110e2a8-5adc-4f7b-90a0-701b4fedf476";
@@ -29,13 +30,14 @@ public sealed class PassportsController : ControllerBase
     public PassportsController(
         LeoOsDbContext db, OcrService ocr,
         IHttpClientFactory httpFactory, ILogger<PassportsController> logger,
-        INotificationService notifications)
+        INotificationService notifications, IOrgSmsFollowUp orgSms)
     {
         _db = db;
         _ocr = ocr;
         _httpFactory = httpFactory;
         _logger = logger;
         _notifications = notifications;
+        _orgSms = orgSms;
     }
 
     public sealed record UpdatePassportBody(
@@ -300,23 +302,37 @@ public sealed class PassportsController : ControllerBase
         {
             try
             {
-                var phone = ExtractPhone(job.Phone);
-                if (phone is null) continue;
-
                 var refId = job.PassportId.ToString();
-                var recent = await _db.SmsQueue.AsNoTracking().AnyAsync(q =>
-                    q.ReferenceType == "permit_expiry" && q.ReferenceId == refId && q.CreatedAt >= since, ct);
-                if (recent) continue;
-
-                var vars = new Dictionary<string, string>
+                var phone = ExtractPhone(job.Phone);
+                if (phone is not null)
                 {
-                    ["name"] = job.Name,
-                    ["passport"] = job.PassportNumber,
-                    ["expiryDate"] = job.Expiry,
-                };
-                await _notifications.SendSmsTemplateAsync(
-                    "PermitExpiring", phone, vars, priority: 8,
-                    referenceType: "permit_expiry", referenceId: refId, ct);
+                    var recent = await _db.SmsQueue.AsNoTracking().AnyAsync(q =>
+                        q.ReferenceType == "permit_expiry" && q.ReferenceId == refId && q.CreatedAt >= since, ct);
+                    if (!recent)
+                    {
+                        var vars = new Dictionary<string, string>
+                        {
+                            ["name"] = job.Name,
+                            ["passport"] = job.PassportNumber,
+                            ["expiryDate"] = job.Expiry,
+                        };
+                        await _notifications.SendSmsTemplateAsync(
+                            "PermitExpiring", phone, vars, priority: 8,
+                            referenceType: "permit_expiry", referenceId: refId, ct);
+                    }
+                }
+
+                var recentOrg = await _db.SmsQueue.AsNoTracking().AnyAsync(q =>
+                    q.ReferenceType == "permit_expiry_org" && q.ReferenceId == refId && q.CreatedAt >= since, ct);
+                if (!recentOrg)
+                {
+                    await _orgSms.NotifyAsync(
+                        $"Permit expiring: {job.Name} ({job.PassportNumber}) on {job.Expiry}",
+                        referenceType: "permit_expiry_org",
+                        referenceId: refId,
+                        priority: 8,
+                        ct: ct);
+                }
             }
             catch (Exception ex)
             {

@@ -1,9 +1,11 @@
 # Data model
 
-Schema: `leo-os/packages/db/src/schema/`. ORM: Drizzle. Database: Postgres (`leoos` in API URL; compose may also set a service-level DB name — API `DATABASE_URL` is authoritative).
+Live ORM: **EF Core** in `leo-os-dotnet/LeoOs.Infrastructure/Entities/`.  
+Schema reference (shapes): `leo-os/packages/db/src/schema/` (Drizzle — not used at runtime).
 
-Schema push (dev): `pnpm --filter @leo/db run push`  
-Production also applies bootstrap alters/seeds in `apps/api/src/lib/bootstrap.ts` on startup.
+Database: Postgres (`leoos` in API `DATABASE_URL`; compose may also set a service-level DB name — API URL is authoritative).
+
+Additive SMS tables: applied on API startup via embedded SQL (`001_sms_notifications.sql`, `002_sms_gateway_default.sql`).
 
 ---
 

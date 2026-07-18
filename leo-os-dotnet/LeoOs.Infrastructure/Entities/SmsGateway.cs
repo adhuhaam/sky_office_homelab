@@ -58,6 +58,9 @@ public class SmsGateway
     [Column("priority")]
     public int Priority { get; set; }
 
+    [Column("is_default")]
+    public bool IsDefault { get; set; }
+
     [Column("last_seen")]
     public DateTimeOffset? LastSeen { get; set; }
 

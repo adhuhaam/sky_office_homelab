@@ -16,12 +16,18 @@ public sealed class LoaController : ControllerBase
 {
     private readonly LeoOsDbContext _db;
     private readonly INotificationService _notifications;
+    private readonly IOrgSmsFollowUp _orgSms;
     private readonly ILogger<LoaController> _logger;
 
-    public LoaController(LeoOsDbContext db, INotificationService notifications, ILogger<LoaController> logger)
+    public LoaController(
+        LeoOsDbContext db,
+        INotificationService notifications,
+        IOrgSmsFollowUp orgSms,
+        ILogger<LoaController> logger)
     {
         _db = db;
         _notifications = notifications;
+        _orgSms = orgSms;
         _logger = logger;
     }
 
@@ -126,16 +132,25 @@ public sealed class LoaController : ControllerBase
         try
         {
             var phone = ExtractPhone(loa.CandidateEmergencyContact) ?? ExtractPhone(loa.CompanyPhone);
-            if (string.IsNullOrWhiteSpace(phone)) return;
-
-            var vars = new Dictionary<string, string>
+            if (!string.IsNullOrWhiteSpace(phone))
             {
-                ["name"] = loa.CandidateName ?? "candidate",
-                ["loaId"] = loa.Id.ToString(),
-            };
-            await _notifications.SendSmsTemplateAsync(
-                "LoaCreated", phone, vars, priority: 5,
-                referenceType: "loa", referenceId: loa.Id.ToString(), ct);
+                var vars = new Dictionary<string, string>
+                {
+                    ["name"] = loa.CandidateName ?? "candidate",
+                    ["loaId"] = loa.Id.ToString(),
+                };
+                await _notifications.SendSmsTemplateAsync(
+                    "LoaCreated", phone, vars, priority: 5,
+                    referenceType: "loa", referenceId: loa.Id.ToString(), ct);
+            }
+
+            var name = loa.CandidateName ?? "candidate";
+            await _orgSms.NotifyAsync(
+                $"LOA created for {name} (#{loa.Id})",
+                referenceType: "loa_org",
+                referenceId: loa.Id.ToString(),
+                priority: 5,
+                ct: ct);
         }
         catch (Exception ex)
         {

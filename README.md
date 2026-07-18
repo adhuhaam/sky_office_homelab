@@ -17,8 +17,8 @@
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev/)
 [![Vite](https://img.shields.io/badge/Vite-PWA-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vitejs.dev/)
 [![Expo](https://img.shields.io/badge/Expo-Mobile-000020?style=flat-square&logo=expo&logoColor=white)](https://expo.dev/)
-[![.NET](https://img.shields.io/badge/.NET_8_API-(primary)-512BD4?style=flat-square&logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
-[![Express](https://img.shields.io/badge/Express_API-(retired)-6b7280?style=flat-square&logo=express&logoColor=white)](https://expressjs.com/)
+[![.NET](https://img.shields.io/badge/.NET_8_API-512BD4?style=flat-square&logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
+[![Android](https://img.shields.io/badge/Android-admin_+_SMS-3DDC84?style=flat-square&logo=android&logoColor=white)](docs/ANDROID-APPS.md)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-4169E1?style=flat-square&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square&logo=docker&logoColor=white)](https://docs.docker.com/compose/)
 [![Tailscale](https://img.shields.io/badge/Tailscale-private_access-000000?style=flat-square&logo=tailscale&logoColor=white)](https://tailscale.com/)
@@ -33,7 +33,7 @@
 
 ## What Sky Office is
 
-Sky Office (**LEO OS**) is a **self-hosted** internal ERP for a Maldives recruitment / manpower agency. Office staff use an installable **web PWA**; field staff use an **Expo** app. Both talk to one REST API backed by **PostgreSQL**.
+Sky Office (**LEO OS**) is a **self-hosted** internal ERP for a Maldives recruitment / manpower agency. Office staff use an installable **web PWA**; field staff use **native Android** (`leo-android`) plus optional **SMS gateway** phones. Everything talks to one **ASP.NET Core** API backed by **PostgreSQL**.
 
 <table>
 <tr>
@@ -151,8 +151,10 @@ apps/
 ├── infra/nginx + certs     # Public proxy + LAN TLS
 ├── scripts/                # go-live.sh · run-dotnet-api.sh · …
 ├── docs/                   # System documentation (start: docs/SYSTEM-MAP.md)
-├── leo-os/                 # React PWA + Expo (+ legacy Express for rollback)
-└── leo-os-dotnet/          # Primary ASP.NET Core API
+├── leo-os/                 # React PWA + Expo (reference)
+├── leo-os-dotnet/          # ASP.NET Core API (+ SMS/Notification)
+├── leo-android/            # Native admin Compose app
+└── leo-sms-gateway/        # Android SIM SMS nodes
 ```
 
 ---
@@ -162,9 +164,9 @@ apps/
 | Bubble | Detail |
 |--------|--------|
 | **Web** | React 19 · Vite · shadcn/ui · TanStack Query · wouter · PWA |
-| **Mobile** | Expo 54 · Expo Router · Secure Store Bearer token |
-| **API (live)** | ASP.NET Core 8 · EF Core · Npgsql · express-compatible sessions |
-| **API (legacy)** | Express 5 · kept in tree for rollback only |
+| **Mobile** | Native Compose (`leo-android`); Expo = reference only |
+| **API** | ASP.NET Core 8 · EF Core · Npgsql · cookie sessions |
+| **SMS** | SignalR hub + queue · multi-device nodes · one default |
 | **DB** | PostgreSQL 17 · database `leoos` |
 | **OCR** | OpenAI-compatible vision (`OPENAI_*` / `DEEPSEEK_*`) |
 | **Deploy** | Docker Compose · network `homelab` |

@@ -92,7 +92,7 @@ Master rates are loaded via `useSalaryRecordsWithMasterRates` (`apps/web/src/hoo
 |------|------|
 | `apps/web/src/pages/salary.tsx` | Admin list; header button and row View links |
 | `apps/web/src/App.tsx` | Route registration |
-| `apps/api/src/routes/salary-records.ts` | Data API (no changes required) |
+| `leo-os-dotnet` `SalaryRecordsController` | Data API |
 | `packages/api-client-react/.../api.schemas.ts` | `SalaryRecord` type |
 
 ## Deploy

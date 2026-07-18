@@ -14,8 +14,7 @@ Single-page orientation. Deep dives are linked below.
 | Mobile (native admin) | `leo-android/` | Building (Expo replacement) |
 | SMS gateway | `leo-sms-gateway/` | Building |
 | Mobile (Expo) | `leo-os/apps/mobile` | Legacy reference until native parity QA |
-| API (primary) | `leo-os-dotnet/` → `leo-api-dotnet` | Live (+ Notification / SMS module) |
-| API (legacy) | `leo-os/apps/api` | Retired from path (rollback only) |
+| API | `leo-os-dotnet/` → `leo-api-dotnet` | Live (+ Notification / SMS module) |
 | Database | Postgres 17 · `leoos` | Live |
 
 ## Runtime

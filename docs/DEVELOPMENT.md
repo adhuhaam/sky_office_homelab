@@ -13,10 +13,9 @@ Use **pnpm only** (root `preinstall` rejects npm/yarn).
 
 | Filter | Dev command |
 |--------|-------------|
-| `@leo/api` | `pnpm --filter @leo/api run dev` |
 | `@leo/web` | `pnpm --filter @leo/web run dev` |
 | `@leo/mobile` | `pnpm mobile:dev` |
-| `@leo/db` | edit schema → `pnpm --filter @leo/db run push` |
+| `@leo/db` | schema reference only — prefer EF entities in `leo-os-dotnet` for live schema |
 
 Root scripts (`leo-os/package.json`):
 
@@ -25,7 +24,7 @@ Root scripts (`leo-os/package.json`):
 | `pnpm build` | Build all packages with a build script |
 | `pnpm typecheck` | Typecheck all |
 | `pnpm deploy:web` | Production web → `apps/react/app/` |
-| `pnpm mobile:dev` | Expo dev |
+| `pnpm mobile:dev` | Expo dev (reference) |
 | `pnpm mobile:build:android` | Android build script |
 
 ## ASP.NET Core API (primary)
@@ -49,12 +48,6 @@ git pull origin main   # repo: sky_office_homelab
 ```
 
 Details: [ANDROID-APPS.md](ANDROID-APPS.md). Expo (`pnpm mobile:dev`) is legacy reference only.
-
-## Local API (Node — legacy / reference)
-
-```bash
-pnpm --filter @leo/api run dev
-```
 
 ## Local web
 

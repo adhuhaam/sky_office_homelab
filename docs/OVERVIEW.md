@@ -51,7 +51,7 @@ It covers the full worker lifecycle:
 ```
 /home/adhuhaam/apps/          ← homelab deployment root (this repo)
 ├── docker-compose.yml        ← production stack
-├── leo-os/                   ← React PWA + Expo reference (+ legacy Express)
+├── leo-os/                   ← React PWA + Expo reference
 ├── leo-os-dotnet/            ← primary ASP.NET Core API (+ SMS/Notification)
 ├── leo-android/              ← native admin (Compose)
 ├── leo-sms-gateway/          ← Android SIM SMS gateway

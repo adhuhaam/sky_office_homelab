@@ -36,6 +36,7 @@ builder.Services.AddScoped<ISmsGatewayService, SmsGatewayService>();
 builder.Services.AddScoped<IGatewayHeartbeatService, GatewayHeartbeatService>();
 builder.Services.AddScoped<ISmsQueueService, SmsQueueService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<IOrgSmsFollowUp, OrgSmsFollowUp>();
 builder.Services.AddSingleton<ISmsDispatchPublisher, SignalRSmsDispatchPublisher>();
 builder.Services.AddHostedService<SmsDispatchWorker>();
 builder.Services.AddSignalR();

@@ -44,6 +44,7 @@ public interface ISmsGatewayService
     Task<SmsGateway?> GetAsync(int id, CancellationToken ct = default);
     Task<IReadOnlyList<SmsGateway>> ListAsync(CancellationToken ct = default);
     Task<SmsGateway?> SelectGatewayAsync(CancellationToken ct = default);
+    Task<bool> SetDefaultAsync(int id, CancellationToken ct = default);
     Task SetOnlineAsync(int id, bool online, CancellationToken ct = default);
     Task DeleteAsync(int id, CancellationToken ct = default);
     static string HashKey(string plain)
@@ -109,6 +110,14 @@ public sealed class SmsGatewayService : ISmsGatewayService
         };
         _db.SmsGateways.Add(g);
         await _db.SaveChangesAsync(ct);
+
+        // First registered node becomes the default if none exists yet
+        if (!await _db.SmsGateways.AnyAsync(x => x.IsDefault, ct))
+        {
+            g.IsDefault = true;
+            await _db.SaveChangesAsync(ct);
+        }
+
         return (g, plain);
     }
 
@@ -134,12 +143,17 @@ public sealed class SmsGatewayService : ISmsGatewayService
         var cutoff = DateTimeOffset.UtcNow.AddMinutes(-2);
         var online = await _db.SmsGateways.AsNoTracking()
             .Where(g => g.Status == "online" && g.LastHeartbeat != null && g.LastHeartbeat >= cutoff)
-            .OrderByDescending(g => g.Priority)
+            .OrderByDescending(g => g.IsDefault)
+            .ThenByDescending(g => g.Priority)
             .ThenBy(g => g.Id)
             .ToListAsync(ct);
         if (online.Count == 0) return null;
 
-        // Least busy among online
+        // Prefer exclusive default when it is online and fresh
+        var preferred = online.FirstOrDefault(g => g.IsDefault);
+        if (preferred is not null) return preferred;
+
+        // Safety net: standby nodes (least busy, then priority)
         var counts = await _db.SmsQueue.AsNoTracking()
             .Where(q => q.Status == "Sending" || q.Status == "Pending")
             .GroupBy(q => q.GatewayId)
@@ -147,6 +161,21 @@ public sealed class SmsGatewayService : ISmsGatewayService
             .ToListAsync(ct);
         var map = counts.Where(c => c.GatewayId != null).ToDictionary(c => c.GatewayId!.Value, c => c.Count);
         return online.OrderBy(g => map.GetValueOrDefault(g.Id, 0)).ThenByDescending(g => g.Priority).First();
+    }
+
+    public async Task<bool> SetDefaultAsync(int id, CancellationToken ct = default)
+    {
+        var target = await _db.SmsGateways.FirstOrDefaultAsync(x => x.Id == id, ct);
+        if (target is null) return false;
+
+        var all = await _db.SmsGateways.ToListAsync(ct);
+        foreach (var g in all)
+        {
+            g.IsDefault = g.Id == id;
+            g.UpdatedAt = DateTimeOffset.UtcNow;
+        }
+        await _db.SaveChangesAsync(ct);
+        return true;
     }
 
     public async Task SetOnlineAsync(int id, bool online, CancellationToken ct = default)

@@ -11,7 +11,7 @@ curl -k https://192.168.18.150/api/health
 
 Also: `GET /api/healthz` · `GET /api/health/db`.
 
-Implementation: `leo-os-dotnet/LeoOs.Api/Controllers/` (Express routers under `leo-os/apps/api` kept for reference).
+Implementation: `leo-os-dotnet/LeoOs.Api/Controllers/`.
 ## Conventions
 
 - Errors: `{ "error": "message" }` with appropriate HTTP status

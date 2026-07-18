@@ -101,6 +101,51 @@ fun DashboardScreen(viewModel: DashboardViewModel = hiltViewModel()) {
             // Connection status banner
             ConnectionBanner(state.connectionState, state.gatewayName, state.serverUrl)
 
+            // Node role (default vs standby) — set only from web SMS Gateways
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (state.isDefault)
+                        GreenSuccess.copy(alpha = 0.12f)
+                    else
+                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                ),
+            ) {
+                Column(Modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        if (state.isDefault) "Default (active node)" else "Standby node",
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (state.isDefault) GreenSuccess else MaterialTheme.colorScheme.onSurface,
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "Org management SMS relay. Superuser chooses the default in web → SMS Gateways. If this phone goes offline, set another node as default there.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+
+            if (!permissionsState.allPermissionsGranted) {
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = YellowWarning.copy(alpha = 0.15f)),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text("Permissions required", fontWeight = FontWeight.SemiBold, color = YellowWarning)
+                        Text(
+                            "Grant SMS, phone state, and notifications. Also disable battery optimization for this app (Xiaomi / Samsung).",
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(top = 4.dp),
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Button(onClick = { permissionsState.launchMultiplePermissionRequest() }) {
+                            Text("Grant permissions")
+                        }
+                    }
+                }
+            }
+
             // Controls
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -147,6 +192,11 @@ fun DashboardScreen(viewModel: DashboardViewModel = hiltViewModel()) {
             InfoCard(title = "Gateway") {
                 InfoRow(Icons.Default.Link, "ID", state.gatewayId.ifBlank { "—" })
                 InfoRow(Icons.Default.CloudOff, "Server", state.serverUrl.ifBlank { "—" })
+                InfoRow(
+                    Icons.Default.Link,
+                    "Role",
+                    if (state.isDefault) "Default (active)" else "Standby",
+                )
             }
 
             state.lastError?.let { err ->

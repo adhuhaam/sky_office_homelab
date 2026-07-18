@@ -73,7 +73,7 @@ flowchart LR
 4. Billing → new invoice → import confirmed salaries
 5. Line: `Salary — NAME (JOB TITLE)`, qty=days, rate=`clientSalary`
 
-Math: `apps/api/src/lib/money.ts`.
+Math: `leo-os-dotnet/LeoOs.Infrastructure/Services/Money.cs`.
 
 ---
 

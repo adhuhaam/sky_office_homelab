@@ -47,6 +47,7 @@ public sealed class GatewayController : ControllerBase
             gatewayKey = key,
             hubPath = "/hubs/sms-gateway",
             heartbeatIntervalSeconds = 30,
+            isDefault = g.IsDefault,
         });
     }
 
@@ -94,6 +95,10 @@ public sealed class GatewayController : ControllerBase
             heartbeatIntervalSeconds = 30,
             hubPath = "/hubs/sms-gateway",
             maxRetries = 3,
+            isDefault = g.IsDefault,
+            role = g.IsDefault ? "default" : "standby",
+            status = g.Status,
+            lastHeartbeat = g.LastHeartbeat,
         });
     }
 
@@ -125,6 +130,7 @@ public sealed class GatewayController : ControllerBase
             g.Id, g.Name, g.Description, g.PhoneNumber, g.Status,
             g.LastHeartbeat, g.BatteryLevel, g.SignalStrength, g.NetworkType, g.SimOperator,
             g.AndroidVersion, g.DeviceModel, g.AppVersion, g.TailscaleIp, g.LastSeen, g.Priority,
+            isDefault = g.IsDefault,
             queued = queued.FirstOrDefault(q => q.GatewayId == g.Id)?.Count ?? 0,
             sentToday = sentToday.FirstOrDefault(q => q.GatewayId == g.Id)?.Count ?? 0,
             failedToday = failedToday.FirstOrDefault(q => q.GatewayId == g.Id)?.Count ?? 0,
@@ -160,6 +166,16 @@ public sealed class GatewayController : ControllerBase
         return Ok(new { g.Id, g.Name, gatewayKey = key, note = "Store gatewayKey now; it is shown once." });
     }
 
+    [HttpPost("{id:int}/set-default")]
+    [RequireLeoAuth]
+    [RequireRole("superuser", "admin")]
+    public async Task<IActionResult> SetDefault(int id, CancellationToken ct)
+    {
+        var ok = await _gateways.SetDefaultAsync(id, ct);
+        if (!ok) return NotFound(new { error = "Gateway not found" });
+        return Ok(new { id, isDefault = true });
+    }
+
     [HttpDelete("{id:int}")]
     [RequireLeoAuth]
     [RequireRole("superuser", "admin")]
@@ -177,15 +193,48 @@ public sealed class SmsController : ControllerBase
     private readonly INotificationService _notifications;
     private readonly ISmsQueueService _queue;
     private readonly LeoOsDbContext _db;
+    private readonly IOrgSmsFollowUp _orgSms;
 
-    public SmsController(INotificationService notifications, ISmsQueueService queue, LeoOsDbContext db)
+    public SmsController(
+        INotificationService notifications,
+        ISmsQueueService queue,
+        LeoOsDbContext db,
+        IOrgSmsFollowUp orgSms)
     {
         _notifications = notifications;
         _queue = queue;
         _db = db;
+        _orgSms = orgSms;
     }
 
     public sealed record SendBody(string Recipient, string Message, int? Priority, string? ReferenceType, string? ReferenceId, string? TemplateCode);
+
+    public sealed record OrgFollowUpBody(string? Summary);
+
+    [HttpPost("notify-org")]
+    [RequireLeoAuth]
+    [RequireRole("superuser", "admin")]
+    public async Task<IActionResult> NotifyOrg([FromBody] OrgFollowUpBody? body, CancellationToken ct)
+    {
+        var summary = string.IsNullOrWhiteSpace(body?.Summary)
+            ? "Manual follow-up from SMS Gateways"
+            : body!.Summary!.Trim();
+        var phone = await _orgSms.GetOrganizationPhoneAsync(ct);
+        if (phone is null)
+            return BadRequest(new { error = "Organization phone is not set in Settings" });
+        var item = await _orgSms.NotifyAsync(summary, referenceType: "manual_org", ct: ct);
+        if (item is null) return BadRequest(new { error = "Failed to enqueue" });
+        return Ok(new { id = item.Id, status = item.Status, recipient = phone });
+    }
+
+    [HttpGet("org-phone")]
+    [RequireLeoAuth]
+    [RequireRole("superuser", "admin")]
+    public async Task<IActionResult> OrgPhone(CancellationToken ct)
+    {
+        var phone = await _orgSms.GetOrganizationPhoneAsync(ct);
+        return Ok(new { phone });
+    }
 
     [HttpPost("send")]
     [RequireLeoAuth]

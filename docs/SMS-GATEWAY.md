@@ -21,8 +21,8 @@ flowchart LR
 
 | Piece | Location |
 |-------|----------|
-| Schema SQL | `leo-os-dotnet/LeoOs.Infrastructure/Sql/001_sms_notifications.sql` (embedded; applied on API startup) |
-| Tables | `sms_gateways`, `sms_queue`, `sms_logs`, `notification_templates` |
+| Schema SQL | `001_sms_notifications.sql` + `002_sms_gateway_default.sql` (embedded; applied on API startup) |
+| Tables | `sms_gateways` (+ `is_default`), `sms_queue`, `sms_logs`, `notification_templates` |
 | Services | `LeoOs.Infrastructure/Notifications/` |
 | Hub | `LeoOs.Api/Hubs/SmsGatewayHub.cs` → `/hubs/sms-gateway` |
 | REST | `GatewayController` · `SmsController` |
@@ -54,6 +54,23 @@ Seeded templates:
 | `PermitExpiring` | Work permit expiring soon |
 | `LoaCreated` | Letter of Appointment created |
 | `EmployeeCreated` | Employee record created (hook reserved) |
+| `OrgFollowUp` | Organization phone follow-up (Settings → company phone) |
+
+---
+
+## Multi-device nodes + default
+
+Multiple Android phones can register as gateways. Exactly **one** may be `is_default`:
+
+- Dispatch prefers an **online default**; if offline, falls back to another online standby
+- Superuser sets default on **SMS Gateways** (`POST /api/gateway/{id}/set-default`)
+- Failover ops model: when the default phone dies, mark another node as default
+- Devices poll `GET /gateway/config` for role (default vs standby)
+
+**Organization phone** (`app_settings.company_phone`):
+
+- `GET /api/sms/org-phone` · `POST /api/sms/notify-org` `{ summary }`
+- Product hooks (LOA, permit alerts) can also SMS the org number via `IOrgSmsFollowUp`
 
 ---
 
@@ -64,7 +81,7 @@ Statuses: `Pending` → `Sending` → `Sent` | `Failed` | `Cancelled`
 `SmsDispatchWorker` (hosted service):
 
 1. Claims next `Pending` (or due retry)
-2. Selects an **online** gateway (priority / availability)
+2. Selects gateway: **online default**, else online standby (priority)
 3. Pushes SignalR `SendSms` `{ queueId, recipient, message }`
 4. Device sends via `SmsManager`, then `SmsCompleted` / `SmsFailed`
 5. Retries roughly **30s → 2m → fail** when the gateway is offline or send fails
@@ -93,6 +110,9 @@ Base: `{server}/api` (e.g. `http://100.126.222.96/api`).
 | `GET` | `/gateway/{id}` | Detail |
 | `POST` | `/gateway` | Admin create (returns key once) |
 | `DELETE` | `/gateway/{id}` | Remove |
+| `POST` | `/gateway/{id}/set-default` | Mark exclusive default node |
+| `GET` | `/sms/org-phone` | Organization SMS number |
+| `POST` | `/sms/notify-org` | `{ summary }` → `OrgFollowUp` template |
 | `POST` | `/sms/send` | `{ recipient, message }` or `{ recipient, templateCode, … }` |
 | `POST` | `/sms/sendbulk` | `{ messages: [...] }` |
 | `GET` | `/sms/pending` | Open queue rows |

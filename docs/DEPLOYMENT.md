@@ -97,7 +97,7 @@ docker compose up -d --build
 ## Rollback
 
 - **Web:** restore previous `react/app/` contents from git or backup
-- **API:** rebuild previous `leo-api-dotnet` image from git, or temporarily restore Express `leo-api` (see [MIGRATION-DOTNET.md](MIGRATION-DOTNET.md) rollback)
+- **API:** rebuild previous `leo-api-dotnet` image from git (see [MIGRATION-DOTNET.md](MIGRATION-DOTNET.md) for historical Express restore via git checkout)
 
 ## Post-deploy checklist
 

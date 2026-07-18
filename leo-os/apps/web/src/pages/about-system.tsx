@@ -676,8 +676,8 @@ export function AboutSystemPage() {
           <Separator className="my-4" />
           <p className="text-xs text-muted-foreground leading-relaxed">
             Superuser-only live diagnostic. Production traffic goes through{" "}
-            <span className="font-mono">leo-api-dotnet</span> (ASP.NET Core). Express{" "}
-            <span className="font-mono">leo-api</span> is retired from the request path.
+            <span className="font-mono">leo-api-dotnet</span> (ASP.NET Core). The Express
+            package has been removed from the tree.
           </p>
         </CardContent>
       </Card>
