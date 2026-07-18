@@ -21,6 +21,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.navigation.NavType
+import com.sky.office.gateway.ui.navigation.GatewayNavGraph
 import com.sky.office.navigation.Screen
 import com.sky.office.ui.screens.auth.LoginViewModel
 import com.sky.office.ui.screens.billing.BillingScreen
@@ -42,7 +43,8 @@ data class BottomNavItem(
 @Composable
 fun MainScreen(
     onLogout: () -> Unit,
-    onOpenSmsGateway: () -> Unit = {},
+    openSmsGateway: Boolean = false,
+    onSmsGatewayOpened: () -> Unit = {},
 ) {
     val navController = rememberNavController()
     val loginViewModel: LoginViewModel = hiltViewModel()
@@ -55,6 +57,7 @@ fun MainScreen(
         BottomNavItem(Screen.Billing.route, Icons.Filled.Receipt, "Billing"),
         BottomNavItem(Screen.Expenses.route, Icons.Filled.AccountBalance, "Expenses"),
         BottomNavItem(Screen.Salary.route, Icons.Filled.Payments, "Salary"),
+        BottomNavItem(Screen.SmsGateway.route, Icons.Filled.Sms, "SMS"),
         BottomNavItem(Screen.More.route, Icons.Filled.MoreHoriz, "More"),
     )
 
@@ -71,6 +74,19 @@ fun MainScreen(
                 Screen.Upload.route -> userRole in setOf("superuser", "admin", "company")
                 else -> userRole == null || userRole in staff
             }
+        }
+    }
+
+    LaunchedEffect(openSmsGateway) {
+        if (openSmsGateway) {
+            navController.navigate(Screen.SmsGateway.route) {
+                popUpTo(navController.graph.findStartDestination().id) {
+                    saveState = true
+                }
+                launchSingleTop = true
+                restoreState = true
+            }
+            onSmsGatewayOpened()
         }
     }
 
@@ -140,11 +156,11 @@ fun MainScreen(
             composable(Screen.Salary.route) {
                 SalaryScreen()
             }
+            composable(Screen.SmsGateway.route) {
+                GatewayNavGraph(embedded = true)
+            }
             composable(Screen.More.route) {
-                MoreScreen(
-                    navController = navController,
-                    onOpenSmsGateway = onOpenSmsGateway,
-                )
+                MoreScreen(navController = navController)
             }
             composable(Screen.Loa.route) {
                 LoaScreen(onBack = { navController.popBackStack() })

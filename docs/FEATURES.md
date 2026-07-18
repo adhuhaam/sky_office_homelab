@@ -162,7 +162,8 @@ Kotlin Compose app at `leo-android/` (`com.sky.office`). Single Android client f
 | Upload | OCR multipart |
 | Master | Employee list + detail |
 | Billing / Salary / Expenses | Finance lists |
-| More | LOA, companies, clients, passwords, admin users, profile (API base URL), **SMS gateway node** |
+| More | LOA, companies, clients, passwords, admin users, profile (API base URL) |
+| **SMS** (bottom tab) | Gateway register, SignalR relay, logs, settings |
 
 QA checklist: `leo-android/PARITY-QA.md`. Full build notes: [ANDROID-APPS.md](ANDROID-APPS.md).
 

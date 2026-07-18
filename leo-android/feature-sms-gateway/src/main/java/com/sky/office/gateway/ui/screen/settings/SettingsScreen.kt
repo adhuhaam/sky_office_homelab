@@ -46,7 +46,7 @@ import com.sky.office.gateway.ui.theme.RedError
 @Composable
 fun SettingsScreen(
     onLoggedOut: () -> Unit,
-    onExitToOffice: () -> Unit = {},
+    onExitToOffice: (() -> Unit)? = null,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -164,11 +164,12 @@ fun SettingsScreen(
                 }
             }
 
-            // Back to office shell
-            OutlinedButton(
-                onClick = onExitToOffice,
-                modifier = Modifier.fillMaxWidth(),
-            ) { Text("Back to Sky Office") }
+            if (onExitToOffice != null) {
+                OutlinedButton(
+                    onClick = onExitToOffice,
+                    modifier = Modifier.fillMaxWidth(),
+                ) { Text("Back to Sky Office") }
+            }
 
             // Danger zone
             Card(

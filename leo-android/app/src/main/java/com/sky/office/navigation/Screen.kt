@@ -7,9 +7,6 @@ sealed class Screen(val route: String) {
     // Main shell
     object Main : Screen("main")
 
-    /** SMS gateway node mode (embedded feature module). */
-    object SmsGateway : Screen("sms_gateway")
-
     // Bottom-nav destinations
     object Dashboard : Screen("dashboard")
     object Master : Screen("master")
@@ -17,6 +14,8 @@ sealed class Screen(val route: String) {
     object Billing : Screen("billing")
     object Expenses : Screen("expenses")
     object Salary : Screen("salary")
+    /** SMS gateway node (bottom tab → :feature-sms-gateway). */
+    object SmsGateway : Screen("sms_gateway")
     object More : Screen("more")
 
     // Detail screens

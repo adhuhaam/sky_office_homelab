@@ -15,7 +15,6 @@ import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Sms
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -58,7 +57,6 @@ import javax.inject.Inject
 @Composable
 fun MoreScreen(
     navController: NavController,
-    onOpenSmsGateway: () -> Unit = {},
 ) {
     data class MoreLink(
         val label: String,
@@ -81,7 +79,6 @@ fun MoreScreen(
         MoreLink("Admin users", Icons.Filled.AdminPanelSettings) {
             navController.navigate(Screen.AdminUsers.route)
         },
-        MoreLink("SMS gateway node", Icons.Filled.Sms, onOpenSmsGateway),
         MoreLink("Profile & settings", Icons.Filled.Person) {
             navController.navigate(Screen.Profile.route)
         },
@@ -91,9 +88,6 @@ fun MoreScreen(
             items(links) { link ->
                 ListItem(
                     headlineContent = { Text(link.label) },
-                    supportingContent = if (link.label == "SMS gateway node") {
-                        { Text("Register this device as an SMS relay") }
-                    } else null,
                     leadingContent = { Icon(link.icon, contentDescription = null) },
                     trailingContent = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null) },
                     modifier = Modifier.clickable(onClick = link.onClick)

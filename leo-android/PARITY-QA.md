@@ -23,11 +23,11 @@ Product: **Sky Office** (`com.sky.office`) — the only Android client.
 - [ ] QR / visiting cards if still required
 
 ## SMS node mode
-- [ ] More → SMS gateway node opens register/dashboard
+- [ ] Bottom tab **SMS** opens register/dashboard
 - [ ] Register → SignalR connected; About System shows online
 - [ ] Test SMS from web → Sent; local logs update
-- [ ] Back to Sky Office returns to office shell without killing service
-- [ ] Boot / notification tap reopens gateway UI
+- [ ] Switching away from SMS tab leaves the relay service running
+- [ ] Boot / notification tap opens the SMS tab
 
 ## Ship gate
 - [ ] Smoke against Tailscale API (`http://100.126.222.96`)

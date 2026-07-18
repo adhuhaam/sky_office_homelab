@@ -19,8 +19,8 @@ Canonical docs: [docs/ANDROID-APPS.md](../docs/ANDROID-APPS.md) · [docs/SMS-GAT
 
 | Mode | How to enter | Purpose |
 |------|----------------|---------|
-| **Office** | Login with staff credentials | Dashboard, Master, Upload, Billing, Expenses, Salary, More |
-| **SMS node** | More → **SMS gateway node** | Register SIM phone, foreground SignalR relay, local logs |
+| **Office** | Login with staff credentials | Home, Master, Upload, Billing, Expenses, Salary, More |
+| **SMS node** | Bottom tab **SMS** (or notification tap) | Register SIM phone, foreground SignalR relay, local logs |
 
 ## Build on your PC
 

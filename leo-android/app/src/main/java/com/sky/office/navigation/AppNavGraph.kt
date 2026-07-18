@@ -13,7 +13,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.sky.office.gateway.ui.navigation.GatewayNavGraph
 import com.sky.office.ui.MainScreen
 import com.sky.office.ui.screens.auth.LoginScreen
 import com.sky.office.ui.screens.auth.LoginViewModel
@@ -34,13 +33,6 @@ fun AppNavGraph(
             }
             false -> { /* stay on login */ }
             null -> Unit
-        }
-    }
-
-    LaunchedEffect(openGatewayInitially, isLoggedIn) {
-        if (openGatewayInitially && isLoggedIn == true) {
-            navController.navigate(Screen.SmsGateway.route)
-            onGatewayOpened()
         }
     }
 
@@ -72,16 +64,8 @@ fun AppNavGraph(
                         popUpTo(0) { inclusive = true }
                     }
                 },
-                onOpenSmsGateway = {
-                    navController.navigate(Screen.SmsGateway.route)
-                }
-            )
-        }
-        composable(Screen.SmsGateway.route) {
-            GatewayNavGraph(
-                onExitToOffice = {
-                    navController.popBackStack()
-                }
+                openSmsGateway = openGatewayInitially && isLoggedIn == true,
+                onSmsGatewayOpened = onGatewayOpened,
             )
         }
     }

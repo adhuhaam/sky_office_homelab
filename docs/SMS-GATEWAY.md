@@ -149,7 +149,7 @@ Nginx must upgrade WebSockets for `/hubs/` (`react/nginx/default.conf` + `infra/
 ## Configure a phone
 
 1. Build/install **Sky Office** (`com.sky.office`) — see [ANDROID-APPS.md](ANDROID-APPS.md).
-2. Open **More → SMS gateway node** (or notification tap when already a node).
+2. Open the bottom tab **SMS** (or notification tap when already a node).
 3. Server URL: `http://100.126.222.96` (Tailscale) or `http://192.168.x.x` (LAN).
 4. Register with a display name; save returned **gateway key**.
 5. Grant `SEND_SMS`, phone state, notifications; exempt from OEM battery killers (Xiaomi/Samsung).
@@ -173,5 +173,5 @@ Nginx must upgrade WebSockets for `/hubs/` (`react/nginx/default.conf` + `infra/
 | `sms_gateways` missing | Re-run SQL or recreate `leo-api-dotnet` after bootstrap fix |
 | Hub won’t connect | Check `/hubs/` Upgrade headers on proxy + cleartext URL |
 | Register works, never online | Permissions / OEM kill / SignalR URL typo |
-| Queued forever | No online gateway; open Sky Office → SMS gateway node |
+| Queued forever | No online gateway; open Sky Office → **SMS** tab |
 | About SMS card empty / error | Ensure tables exist; hard-refresh PWA |

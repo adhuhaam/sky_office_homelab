@@ -70,7 +70,7 @@ Not containerized. One APK:
 cd /home/adhuhaam/apps/leo-android && ./gradlew :app:assembleDebug
 ```
 
-See [SMS-GATEWAY.md](SMS-GATEWAY.md) for gateway ops (More → SMS gateway node).
+See [SMS-GATEWAY.md](SMS-GATEWAY.md) for gateway ops (Sky Office → **SMS** tab).
 
 ## Proxy / TLS
 

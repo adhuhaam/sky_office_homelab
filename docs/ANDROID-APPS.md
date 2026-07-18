@@ -31,7 +31,7 @@ gradle wrapper --gradle-version 8.7   # if gradlew missing
 3. Run on device/emulator with Tailscale or LAN reachability
 4. **Profile** → set API base URL (default idea: `http://100.126.222.96`)
 5. Login with the same credentials as the web PWA (`Authorization: Bearer` session)
-6. Optional: **More → SMS gateway node** on a SIM phone to register as a relay
+6. Optional: bottom tab **SMS** on a SIM phone to register as a relay
 
 **Stack:** Hilt · Navigation Compose · Retrofit · OkHttp · DataStore · Room (gateway logs) · SignalR · WorkManager · `usesCleartextTraffic` for LAN/Tailscale HTTP.
 

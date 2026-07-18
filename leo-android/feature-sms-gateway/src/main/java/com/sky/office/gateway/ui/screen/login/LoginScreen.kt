@@ -49,7 +49,7 @@ import com.sky.office.gateway.ui.theme.GreenSuccess
 @Composable
 fun LoginScreen(
     onRegistered: () -> Unit,
-    onExitToOffice: () -> Unit = {},
+    onExitToOffice: (() -> Unit)? = null,
     viewModel: LoginViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -158,9 +158,11 @@ fun LoginScreen(
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
-            TextButton(onClick = onExitToOffice) {
-                Text("Back to Sky Office")
+            if (onExitToOffice != null) {
+                Spacer(Modifier.height(16.dp))
+                TextButton(onClick = onExitToOffice) {
+                    Text("Back to Sky Office")
+                }
             }
             AnimatedVisibility(visible = uiState is LoginUiState.Success) {
                 Text(

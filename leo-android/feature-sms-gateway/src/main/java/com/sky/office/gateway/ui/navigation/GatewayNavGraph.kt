@@ -1,10 +1,14 @@
 package com.sky.office.gateway.ui.navigation
 
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -28,9 +32,17 @@ private object RootRoute {
     const val MAIN = "gw_root_main"
 }
 
+/**
+ * Full SMS gateway node UI (register, dashboard, logs, settings).
+ *
+ * @param embedded When true (main app SMS tab), uses top tabs so the office bottom bar stays.
+ *                 When false (standalone deep-link shell), uses its own bottom bar.
+ * @param onExitToOffice Optional; hidden when null (tab mode — switch office tabs instead).
+ */
 @Composable
 fun GatewayNavGraph(
-    onExitToOffice: () -> Unit = {},
+    onExitToOffice: (() -> Unit)? = null,
+    embedded: Boolean = false,
 ) {
     val rootNav = rememberNavController()
     val loginVm: LoginViewModel = hiltViewModel()
@@ -53,6 +65,7 @@ fun GatewayNavGraph(
 
         composable(RootRoute.MAIN) {
             MainScaffold(
+                embedded = embedded,
                 onLoggedOut = {
                     rootNav.navigate(RootRoute.LOGIN) {
                         popUpTo(0) { inclusive = true }
@@ -66,45 +79,71 @@ fun GatewayNavGraph(
 
 @Composable
 private fun MainScaffold(
+    embedded: Boolean,
     onLoggedOut: () -> Unit,
-    onExitToOffice: () -> Unit,
+    onExitToOffice: (() -> Unit)?,
 ) {
     val innerNav = rememberNavController()
+    val navBackStackEntry by innerNav.currentBackStackEntryAsState()
+    val currentDestination = navBackStackEntry?.destination
+    val selectedIndex = bottomNavItems.indexOfFirst { item ->
+        currentDestination?.hierarchy?.any { it.route == item.screen.route } == true
+    }.coerceAtLeast(0)
+
+    fun navigateTo(route: String) {
+        innerNav.navigate(route) {
+            popUpTo(innerNav.graph.findStartDestination().id) { saveState = true }
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
 
     Scaffold(
         bottomBar = {
-            val navBackStackEntry by innerNav.currentBackStackEntryAsState()
-            val currentDestination = navBackStackEntry?.destination
-            NavigationBar {
-                bottomNavItems.forEach { item ->
-                    NavigationBarItem(
-                        selected = currentDestination?.hierarchy?.any { it.route == item.screen.route } == true,
-                        onClick = {
-                            innerNav.navigate(item.screen.route) {
-                                popUpTo(innerNav.graph.findStartDestination().id) { saveState = true }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        },
-                        icon = { Icon(item.icon, contentDescription = item.label) },
-                        label = { Text(item.label) },
-                    )
+            if (!embedded) {
+                NavigationBar {
+                    bottomNavItems.forEach { item ->
+                        NavigationBarItem(
+                            selected = currentDestination?.hierarchy?.any { it.route == item.screen.route } == true,
+                            onClick = { navigateTo(item.screen.route) },
+                            icon = { Icon(item.icon, contentDescription = item.label) },
+                            label = { Text(item.label) },
+                        )
+                    }
                 }
             }
         },
     ) { innerPadding ->
-        NavHost(
-            navController = innerNav,
-            startDestination = Screen.Dashboard.route,
-            modifier = Modifier.padding(innerPadding),
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
         ) {
-            composable(Screen.Dashboard.route) { DashboardScreen() }
-            composable(Screen.Logs.route) { LogsScreen() }
-            composable(Screen.Settings.route) {
-                SettingsScreen(
-                    onLoggedOut = onLoggedOut,
-                    onExitToOffice = onExitToOffice,
-                )
+            if (embedded) {
+                TabRow(selectedTabIndex = selectedIndex) {
+                    bottomNavItems.forEachIndexed { index, item ->
+                        Tab(
+                            selected = selectedIndex == index,
+                            onClick = { navigateTo(item.screen.route) },
+                            text = { Text(item.label) },
+                            icon = { Icon(item.icon, contentDescription = item.label) },
+                        )
+                    }
+                }
+            }
+            NavHost(
+                navController = innerNav,
+                startDestination = Screen.Dashboard.route,
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                composable(Screen.Dashboard.route) { DashboardScreen() }
+                composable(Screen.Logs.route) { LogsScreen() }
+                composable(Screen.Settings.route) {
+                    SettingsScreen(
+                        onLoggedOut = onLoggedOut,
+                        onExitToOffice = onExitToOffice,
+                    )
+                }
             }
         }
     }
