@@ -27,7 +27,7 @@ This file is the canonical memory for the **self-hosted Leo OS server** and how 
 |--------------|-----|----------|-------|
 | PC on home Wi‑Fi | `https://192.168.18.150/` | HTTPS (self-signed) | Accept certificate warning once in browser |
 | Phone browser over Tailscale | `http://100.126.222.96/` | HTTP | Tailscale wireguard encrypts traffic; no TLS cert issues |
-| Mobile app API | `http://100.126.222.96` | HTTP | Set via `EXPO_PUBLIC_API_URL` |
+| Mobile app API | `http://100.126.222.96` | HTTP | Set in Sky Office Profile |
 
 **Do not use:**
 
@@ -181,45 +181,31 @@ Production API reads env from `apps/api/.env` (not committed with secrets in git
 
 ---
 
-## 8. Mobile app (LEO Admin)
+## 8. Mobile app (Sky Office)
 
-**Package:** `leo-os/apps/mobile` (`@leo/mobile`)  
-**Android package:** `com.leo.admin`
+**Path:** `leo-android/`  
+**Package / applicationId:** `com.sky.office`  
+**Modules:** `:app` (office) · `:feature-sms-gateway` (SIM SMS node)
 
 ### API URL
 
-Set at build/dev time:
+Set in-app under **Profile** (default idea: `http://100.126.222.96`). Cleartext HTTP is enabled for LAN/Tailscale.
+
+### Build APK (on PC)
 
 ```bash
-EXPO_PUBLIC_API_URL=http://100.126.222.96
+cd leo-android
+./gradlew :app:assembleDebug
 ```
 
-**Config resolver:** `apps/leo-os/apps/mobile/lib/config.ts` — reads `EXPO_PUBLIC_API_URL`.
+Homelab does not build Android.
 
-**Dev command** (from `package.json`):
+### Auth
 
-```bash
-cd /home/adhuhaam/apps/leo-os
-pnpm mobile:dev
-# or: pnpm --filter @leo/mobile run dev
-```
+Office mode: Bearer token (`Authorization: Bearer <sessionId>`) from `/api/auth/mobile-token`.  
+SMS node mode: gateway key + SignalR `/hubs/sms-gateway` (independent of office login).
 
-### Android cleartext HTTP
-
-`apps/leo-os/apps/mobile/app.json` has `"usesCleartextTraffic": true` so Android allows `http://100.126.222.96`.
-
-### Build APK
-
-```bash
-cd /home/adhuhaam/apps/leo-os/apps/mobile
-eas build --platform android --profile preview
-```
-
-Rebuild after changing `EXPO_PUBLIC_API_URL`. EAS profile env should match `http://100.126.222.96`.
-
-### Auth on mobile
-
-Mobile uses Bearer token (`Authorization: Bearer <sessionId>`) stored in `expo-secure-store`, not cookies. Web uses cookie sessions. Same API routes for both.
+Web uses cookie sessions. Same API for office features.
 
 ---
 
@@ -239,15 +225,10 @@ Mobile uses Bearer token (`Authorization: Bearer <sessionId>`) stored in `expo-s
 │   └── certs/                  # Self-signed TLS for LAN
 ├── scripts/                    # go-live.sh, fix-tailscale-ssl.sh, etc.
 ├── postgresql/data/            # Postgres volume
-├── SERVER.md                   # Quick start (short)
 ├── memory_of_project.md        # This file
-└── leo-os/                     # Monorepo source
-    ├── apps/
-    │   ├── api/                # Express API
-    │   ├── web/                # React dashboard (Vite)
-    │   └── mobile/             # Expo app
-    └── packages/
-        └── db/                 # Drizzle schema + migrations
+├── leo-os/                     # Web monorepo (apps/web + packages)
+├── leo-os-dotnet/              # Primary ASP.NET Core API
+└── leo-android/                # Sky Office Android (only mobile client)
 ```
 
 ---
@@ -317,8 +298,8 @@ cd /home/adhuhaam/apps && docker compose up -d --build
 # Deploy web to nginx static dir
 cd /home/adhuhaam/apps/leo-os && pnpm deploy:web
 
-# Mobile dev (Expo)
-cd /home/adhuhaam/apps/leo-os && pnpm mobile:dev
+# Android (on PC, not homelab)
+# Android Studio → open leo-android/ → ./gradlew :app:assembleDebug
 
 # Typecheck monorepo
 cd /home/adhuhaam/apps/leo-os && pnpm typecheck
@@ -336,8 +317,8 @@ cd /home/adhuhaam/apps/leo-os && pnpm --filter @leo/db run push
 | Surface | Tech | Self-hosted access |
 |---------|------|-------------------|
 | Web dashboard | React + Vite + shadcn/ui | `https://192.168.18.150/` |
-| Mobile (LEO Admin) | Expo / React Native | API: `http://100.126.222.96` |
-| API | Express 5, port 8080 | `/api/*` via react-app nginx |
+| Sky Office Android | Kotlin Compose (`com.sky.office`) | API: `http://100.126.222.96` |
+| API | ASP.NET Core 8 (`leo-api-dotnet`) | `/api/*` via react-app nginx |
 | Database | PostgreSQL 17 | Docker `postgres`, DB `leoos` |
 
 **Core features:** passport OCR (GPT-4o Vision), companies/clients, billing, LOA, salary, expenses, tasks, RBAC (superuser → admin → client → company → employee → agent).

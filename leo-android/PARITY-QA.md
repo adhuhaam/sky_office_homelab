@@ -1,6 +1,6 @@
-# Admin Android — parity QA checklist
+# Sky Office Android — QA checklist
 
-Use against Expo `leo-os/apps/mobile` before retiring Expo shipping.
+Product: **Sky Office** (`com.sky.office`) — the only Android client.
 
 ## Wave 0–1
 - [ ] Login / logout / session restore on cold start
@@ -19,10 +19,16 @@ Use against Expo `leo-os/apps/mobile` before retiring Expo shipping.
 
 ## Wave 5–6
 - [ ] Admin users (superuser/admin)
-- [ ] Theme / haptics polish vs Expo
-- [ ] QR / visiting cards if still in Expo scope
+- [ ] Theme / haptics polish
+- [ ] QR / visiting cards if still required
+
+## SMS node mode
+- [ ] More → SMS gateway node opens register/dashboard
+- [ ] Register → SignalR connected; About System shows online
+- [ ] Test SMS from web → Sent; local logs update
+- [ ] Back to Sky Office returns to office shell without killing service
+- [ ] Boot / notification tap reopens gateway UI
 
 ## Ship gate
-- [ ] Side-by-side smoke on same Tailscale API
-- [ ] Stop distributing Expo APKs
-- [ ] Docs already mark Expo as legacy (`SYSTEM-MAP`, `DEPLOYMENT`)
+- [ ] Smoke against Tailscale API (`http://100.126.222.96`)
+- [ ] Only `com.sky.office` APK is distributed

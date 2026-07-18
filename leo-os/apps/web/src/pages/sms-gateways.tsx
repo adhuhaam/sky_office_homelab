@@ -211,14 +211,14 @@ export function SmsGatewayPage() {
             <CardTitle className="text-base">Gateway nodes</CardTitle>
           </div>
           <CardDescription>
-            Every registered leo-sms-gateway phone is a standby node. Prefer the Default when online;
+            Every registered Sky Office SMS node phone is a standby node. Prefer the Default when online;
             choose a new default to fail over.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {gateways.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              No gateways registered yet. Install leo-sms-gateway on an org phone and register.
+              No gateways registered yet. Install Sky Office on an org phone and open More → SMS gateway node.
             </p>
           ) : (
             gateways.map((g) => {

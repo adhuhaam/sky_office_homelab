@@ -6,8 +6,7 @@
 flowchart TB
   subgraph clients["Clients"]
     Web["Web PWA / browser"]
-    Admin["leo-android admin"]
-    SmsGw["leo-sms-gateway"]
+    Sky["Sky Office Android\ncom.sky.office"]
   end
 
   subgraph homelab["Homelab Docker network: homelab"]
@@ -22,22 +21,21 @@ flowchart TB
   Carrier["Dhiraagu / Ooredoo SMS"]
 
   Web --> Proxy
-  Admin --> Proxy
-  SmsGw -->|"REST + SignalR"| Proxy
+  Sky -->|"office Bearer + SMS gateway"| Proxy
   Proxy --> Static
   Static -->|"/api/* · /hubs/*"| API
   Static -->|"/"| Static
   API --> DB
   API --> Ext
   API --> OCR
-  API -->|"SendSms jobs"| SmsGw
-  SmsGw --> Carrier
+  API -->|"SendSms jobs"| Sky
+  Sky --> Carrier
 ```
 
-1. Browser or Android clients hit **leo-proxy** (public entry).
+1. Browser or Sky Office Android hit **leo-proxy** (public entry).
 2. Proxy forwards to **react-app**.
 3. react-app serves static `/`; proxies `/api/` and `/hubs/` to **leo-api-dotnet**.
-4. API reads/writes **Postgres**, calls Xpat/OCR, and pushes SMS jobs to online gateways over SignalR.
+4. API reads/writes **Postgres**, calls Xpat/OCR, and pushes SMS jobs to online gateway phones over SignalR (Sky Office SMS node mode).
 
 ### Dual access model
 
@@ -46,7 +44,7 @@ flowchart TB
 | LAN `https://192.168.18.150` | Self-signed cert on leo-proxy; browser accepts once |
 | Tailscale `http://100.126.222.96` | Plain HTTP at app layer; WireGuard encrypts the tunnel |
 
-HTTP on the Tailscale IP avoids self-signed cert failures on phones and React Native. Do not expose that IP outside the tailnet.
+HTTP on the Tailscale IP avoids self-signed cert failures on phones. Do not expose that IP outside the tailnet.
 
 ## Docker services
 
@@ -72,7 +70,6 @@ Config mounts:
 | Package | Path | Role |
 |---------|------|------|
 | `@leo/web` | `apps/web` | React PWA |
-| `@leo/mobile` | `apps/mobile` | Expo (reference until native parity) |
 | `@leo/db` | `packages/db` | Drizzle schema **reference** (EF Core is live ORM) |
 | `@leo/api-client-react` | `packages/api-client-react` | Shared TanStack Query hooks / types |
 
@@ -81,8 +78,8 @@ Express `@leo/api` has been **removed**. Live API: `leo-os-dotnet/`.
 ```mermaid
 flowchart LR
   web["@leo/web"] --> client["@leo/api-client-react"]
-  mobile["@leo/mobile"] --> client
   client -.->|HTTP| dotnet["leo-api-dotnet"]
+  sky["leo-android Sky Office"] -.->|HTTP + SignalR| dotnet
   dotnet --> postgres[(postgres)]
 ```
 
@@ -127,11 +124,12 @@ Config order: Settings UI (`app_settings`) → env `OPENAI_*` / `DEEPSEEK_*`.
 - PWA: `vite-plugin-pwa`, service worker update prompt
 - Role gates in `App.tsx` / `protected-route.tsx`
 
-## Mobile apps
+## Android
 
-- Native admin: `leo-android/` (Compose) — preferred for field use
-- SMS nodes: `leo-sms-gateway/`
-- Expo `apps/mobile/` — reference only until parity QA
+Single app: `leo-android/` — **Sky Office** (`com.sky.office`).
+
+- Office mode: staff Bearer session
+- SMS node mode: `:feature-sms-gateway` (gateway key + SignalR)
 
 ## Nginx layers
 

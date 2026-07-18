@@ -1,15 +1,16 @@
-# LEO OS monorepo (web + mobile)
+# LEO OS monorepo (web)
 
 Application packages under `/home/adhuhaam/apps/leo-os`.
 
 | Package | Name | Role |
 |---------|------|------|
 | `apps/web` | `@leo/web` | React 19 PWA (primary UI) |
-| `apps/mobile` | `@leo/mobile` | Expo (legacy reference until `leo-android` parity) |
 | `packages/db` | `@leo/db` | Drizzle schema **reference** (live ORM is EF Core in `leo-os-dotnet`) |
 | `packages/api-client-react` | `@leo/api-client-react` | Shared React Query hooks / types |
 
 **API:** production is [`leo-os-dotnet`](../leo-os-dotnet/) (`leo-api-dotnet`). The Express `@leo/api` package has been **removed**.
+
+**Android:** single app at [`../leo-android`](../leo-android/) (**Sky Office**, `com.sky.office`) — not part of this pnpm workspace.
 
 ## Commands
 
@@ -20,9 +21,6 @@ pnpm install
 # Web
 pnpm --filter @leo/web run dev
 pnpm deploy:web   # → /home/adhuhaam/apps/react/app/
-
-# Mobile (Expo reference)
-pnpm mobile:dev
 ```
 
 ## Production API

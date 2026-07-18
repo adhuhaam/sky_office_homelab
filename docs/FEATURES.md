@@ -152,9 +152,9 @@ Installable web app (`vite-plugin-pwa`). SW / workbox / manifest served with no-
 
 ---
 
-## Mobile — Leo Admin (native)
+## Mobile — Sky Office (native)
 
-Kotlin Compose app at `leo-android/` (`com.leo.admin`). Replaces Expo for field use.
+Kotlin Compose app at `leo-android/` (`com.sky.office`). Single Android client for field use and optional SIM SMS relay.
 
 | Area | Purpose |
 |------|---------|
@@ -162,17 +162,15 @@ Kotlin Compose app at `leo-android/` (`com.leo.admin`). Replaces Expo for field 
 | Upload | OCR multipart |
 | Master | Employee list + detail |
 | Billing / Salary / Expenses | Finance lists |
-| More | LOA, companies, clients, passwords, admin users, profile (API base URL) |
+| More | LOA, companies, clients, passwords, admin users, profile (API base URL), **SMS gateway node** |
 
-Parity checklist: `leo-android/PARITY-QA.md`. Full build notes: [ANDROID-APPS.md](ANDROID-APPS.md).
-
-Expo (`leo-os/apps/mobile`) = legacy reference only.
+QA checklist: `leo-android/PARITY-QA.md`. Full build notes: [ANDROID-APPS.md](ANDROID-APPS.md).
 
 ---
 
 ## SMS Gateway (Android)
 
-Separate app `leo-sms-gateway/` (`com.leo.smsgateway`) — SIM relay, not the admin UI. See [SMS-GATEWAY.md](SMS-GATEWAY.md) · [ANDROID-APPS.md](ANDROID-APPS.md).
+SMS relay is **inside Sky Office** (`:feature-sms-gateway`), not a separate APK. See [SMS-GATEWAY.md](SMS-GATEWAY.md) · [ANDROID-APPS.md](ANDROID-APPS.md).
 
 ---
 

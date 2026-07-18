@@ -19,5 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "LeoAdmin"
+rootProject.name = "SkyOffice"
 include(":app")
+include(":feature-sms-gateway")

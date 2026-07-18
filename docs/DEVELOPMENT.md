@@ -14,7 +14,6 @@ Use **pnpm only** (root `preinstall` rejects npm/yarn).
 | Filter | Dev command |
 |--------|-------------|
 | `@leo/web` | `pnpm --filter @leo/web run dev` |
-| `@leo/mobile` | `pnpm mobile:dev` |
 | `@leo/db` | schema reference only — prefer EF entities in `leo-os-dotnet` for live schema |
 
 Root scripts (`leo-os/package.json`):
@@ -24,8 +23,6 @@ Root scripts (`leo-os/package.json`):
 | `pnpm build` | Build all packages with a build script |
 | `pnpm typecheck` | Typecheck all |
 | `pnpm deploy:web` | Production web → `apps/react/app/` |
-| `pnpm mobile:dev` | Expo dev (reference) |
-| `pnpm mobile:build:android` | Android build script |
 
 ## ASP.NET Core API (primary)
 
@@ -44,21 +41,14 @@ Do **not** expect Gradle builds on the homelab. On your PC:
 
 ```bash
 git pull origin main   # repo: sky_office_homelab
-# Android Studio → open leo-android/ or leo-sms-gateway/
+# Android Studio → open leo-android/
 ```
 
-Details: [ANDROID-APPS.md](ANDROID-APPS.md). Expo (`pnpm mobile:dev`) is legacy reference only.
+Details: [ANDROID-APPS.md](ANDROID-APPS.md). Single app: **Sky Office** (`com.sky.office`).
 
 ## Local web
 
 Vite dev server proxies `/api` to the API in typical setups — confirm `apps/web/vite.config.ts` for the proxy target.
-
-## Local mobile
-
-```bash
-EXPO_PUBLIC_API_URL=http://100.126.222.96
-pnpm mobile:dev
-```
 
 ## Schema changes
 

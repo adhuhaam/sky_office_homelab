@@ -29,7 +29,7 @@ Canonical docs for the self-hosted system at `/home/adhuhaam/apps`.
 | [AUTH.md](AUTH.md) | Sessions, RBAC |
 | [ENVIRONMENT.md](ENVIRONMENT.md) | Env vars |
 | [SMS-GATEWAY.md](SMS-GATEWAY.md) | Android SIM SMS relay · SignalR · queue |
-| [ANDROID-APPS.md](ANDROID-APPS.md) | leo-android + leo-sms-gateway local build |
+| [ANDROID-APPS.md](ANDROID-APPS.md) | Sky Office (`leo-android`) local build |
 | [NOTIFICATIONS.md](NOTIFICATIONS.md) | Agent notes for the Notification slice |
 
 ### Run & operate

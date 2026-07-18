@@ -5,8 +5,7 @@ Guidance for AI assistants and developers working in this repo.
 ## Layout
 
 - `apps/web` — Vite React admin UI (primary surface for bug fixes)
-- `apps/mobile` — Expo app (legacy reference until `leo-android` parity QA); prefer native admin + SMS gateway for new mobile work
-- Sibling apps (outside monorepo): `../leo-android` (Compose admin), `../leo-sms-gateway` (SIM SMS gateway)
+- Sibling Android app (outside monorepo): `../leo-android` — **Sky Office** (`com.sky.office`), office + SMS gateway module
 - `packages/db` — Drizzle schema **reference only** (live ORM is EF Core)
 - `packages/api-client-react` — shared React Query client + generated types
 - `../leo-os-dotnet/` — **primary ASP.NET Core API** (`leo-api-dotnet`)

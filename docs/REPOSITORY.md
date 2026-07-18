@@ -37,10 +37,9 @@ apps/
 │   ├── stop-casaos.sh        # Free ports 80/443
 │   ├── setup-host.sh         # Legacy host setup (superseded)
 │   └── run-dotnet-api.sh     # Local ASP.NET API (:5080)
-├── leo-os/                   # pnpm monorepo (web + Expo reference)
+├── leo-os/                   # pnpm monorepo (web)
 ├── leo-os-dotnet/            # Primary ASP.NET Core API (+ SMS/Notification)
-├── leo-android/              # Native admin Compose app
-└── leo-sms-gateway/          # Android SIM SMS gateway
+└── leo-android/              # Sky Office — Compose (office + SMS node)
 ```
 
 See also [ANDROID-APPS.md](ANDROID-APPS.md) and [SMS-GATEWAY.md](SMS-GATEWAY.md).
@@ -49,14 +48,13 @@ See also [ANDROID-APPS.md](ANDROID-APPS.md) and [SMS-GATEWAY.md](SMS-GATEWAY.md)
 
 ```
 leo-os/
-├── package.json              # Root scripts: build, typecheck, deploy:web, mobile:*
+├── package.json              # Root scripts: build, typecheck, deploy:web
 ├── pnpm-workspace.yaml       # packages/*, apps/*
 ├── AGENTS.md                 # Contributor / AI conventions
 ├── README.md
 ├── docs/README.md            # Pointer to apps/docs
 ├── apps/
-│   ├── web/                  # @leo/web — Vite React PWA
-│   └── mobile/               # @leo/mobile — Expo (reference)
+│   └── web/                  # @leo/web — Vite React PWA
 └── packages/
     ├── db/                   # @leo/db — Drizzle schema reference
     └── api-client-react/     # Shared React Query client
@@ -81,7 +79,7 @@ leo-os-dotnet/
 | `leo-os-dotnet/` | `docker compose build leo-api-dotnet && up -d --force-recreate leo-api-dotnet` |
 | `packages/db` schema | push schema + update EF entities + recreate `leo-api-dotnet` |
 | nginx / certs | recreate `leo-proxy` |
-| mobile | Expo/EAS rebuild with correct `EXPO_PUBLIC_API_URL` |
+| `leo-android/` | Build APK on PC (Android Studio) |
 
 ## Related documentation outside this folder
 

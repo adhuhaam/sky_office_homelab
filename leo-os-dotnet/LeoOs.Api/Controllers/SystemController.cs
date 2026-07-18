@@ -202,17 +202,17 @@ public sealed class SystemController : ControllerBase
             {
                 admin = new
                 {
-                    packageId = "com.leo.admin",
+                    packageId = "com.sky.office",
                     path = "leo-android/",
                     status = "building",
                     defaultApiBase = "http://100.126.222.96",
                     shipping = "local_build",
-                    note = "Native Compose admin (Expo replacement). Open in Android Studio.",
+                    note = "Sky Office — office + SMS node. Open leo-android/ in Android Studio.",
                 },
                 smsGateway = new
                 {
-                    packageId = "com.leo.smsgateway",
-                    path = "leo-sms-gateway/",
+                    packageId = "com.sky.office",
+                    path = "leo-android/feature-sms-gateway/",
                     hubPath = "/hubs/sms-gateway",
                     status = "unavailable",
                     online = 0,
@@ -280,7 +280,7 @@ public sealed class SystemController : ControllerBase
                 {
                     new { name = "C#", role = "Primary API (ASP.NET Core 8)" },
                     new { name = "TypeScript", role = "React PWA" },
-                    new { name = "Kotlin", role = "Android admin + SMS gateway" },
+                    new { name = "Kotlin", role = "Sky Office Android (office + SMS node)" },
                     new { name = "SQL (PostgreSQL)", role = "Persistence (leoos)" },
                 },
                 runtimes = new[]
@@ -334,18 +334,18 @@ public sealed class SystemController : ControllerBase
         {
             admin = new
             {
-                packageId = "com.leo.admin",
+                packageId = "com.sky.office",
                 path = "leo-android/",
                 status = "building",
                 defaultApiBase = "http://100.126.222.96",
                 shipping = "local_build",
                 cleartext = true,
-                note = "Native Compose admin replacing Expo. Build on your PC from git; set API URL in Profile.",
+                note = "Sky Office — build on your PC from git; set API URL in Profile. SMS via More → SMS gateway node.",
             },
             smsGateway = new
             {
-                packageId = "com.leo.smsgateway",
-                path = "leo-sms-gateway/",
+                packageId = "com.sky.office",
+                path = "leo-android/feature-sms-gateway/",
                 hubPath = "/hubs/sms-gateway",
                 status = smsStatus,
                 online,
@@ -366,7 +366,7 @@ public sealed class SystemController : ControllerBase
                 }).ToList(),
                 note = online > 0
                     ? $"{online} gateway(s) online · SignalR /hubs/sms-gateway"
-                    : "No online SMS gateway — install leo-sms-gateway APK and register.",
+                    : "No online SMS gateway — install Sky Office and open More → SMS gateway node.",
             },
         };
     }
@@ -394,7 +394,7 @@ public sealed class SystemController : ControllerBase
             N("clients", "Clients", "Surfaces talking to /api", "live", new object[]
             {
                 N("web-pwa", "Web PWA", "leo-os/apps/web → react/app · office admin", "live"),
-                N("mobile", "Expo Mobile", "leo-os/apps/mobile · Bearer session", "live"),
+                N("sky-office-android", "Sky Office Android", "leo-android · com.sky.office · Bearer + SMS node", "building"),
             }),
             N("api-modules", "API modules (leo-os-dotnet)", "Controllers + EF Core · same /api contract", apiStatus, new object[]
             {
@@ -420,9 +420,7 @@ public sealed class SystemController : ControllerBase
             {
                 N("src-dotnet", "leo-os-dotnet/", "Primary API · Dockerfile · LeoOs.Api + Infrastructure", "live"),
                 N("src-web", "leo-os/apps/web", "React 19 · Vite · PWA (deploy:web)", "live"),
-                N("src-android", "leo-android/", "Native admin · Kotlin Compose (Expo replacement)", "building"),
-                N("src-sms-gw", "leo-sms-gateway/", "Android SIM SMS gateway · SignalR FGS", "building"),
-                N("src-mobile", "leo-os/apps/mobile", "Expo 54 · reference until native parity QA", "legacy"),
+                N("src-android", "leo-android/", "Sky Office · Kotlin Compose · office + :feature-sms-gateway", "building"),
                 N("src-db", "leo-os/packages/db", "Drizzle schema reference (EF is live ORM)", "live"),
                 N("src-docs", "docs/", "SYSTEM-MAP · API · SMS-GATEWAY · ARCHITECTURE", "live"),
                 N("src-compose", "docker-compose.yml", "postgres · leo-api-dotnet · react · leo-proxy", "live"),

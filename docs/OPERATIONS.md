@@ -8,7 +8,7 @@ Day-to-day access, scripts, and troubleshooting for the self-hosted Sky Office s
 |--------------|-----|-------|
 | PC on home Wi‑Fi | `https://192.168.18.150/` | Accept self-signed cert once |
 | Phone browser (Tailscale) | `http://100.126.222.96/` | App must be on Tailscale |
-| Mobile app API | `http://100.126.222.96` | `EXPO_PUBLIC_API_URL` |
+| Mobile app API | `http://100.126.222.96` | Set in Sky Office Profile |
 
 **Do not use**
 
@@ -72,7 +72,7 @@ docker compose up -d --force-recreate leo-proxy
 | `ERR_SSL_PROTOCOL_ERROR` on HTTPS Tailscale IP | Serve + Docker both on 443 / cert mismatch | Use HTTP on `100.x`; disable Serve |
 | CasaOS `Not Found` on `/api/health` | CasaOS owned port 80 | `go-live.sh` / `stop-casaos.sh` |
 | Cookies fail on HTTP | `COOKIE_SECURE` without `secure: "auto"` | Current session code uses `"auto"` |
-| Mobile cleartext blocked | Android blocks HTTP | `usesCleartextTraffic` + network security config on `leo-android` / `leo-sms-gateway` |
+| Mobile cleartext blocked | Android blocks HTTP | `usesCleartextTraffic` + network security config on `leo-android` |
 | SignalR SMS hub fails | Missing WebSocket upgrade | Ensure `/hubs/` locations on react + leo-proxy |
 | `sms_*` relation missing | Schema bootstrap failed | Apply SQL or recreate API; see [SMS-GATEWAY.md](SMS-GATEWAY.md) |
 

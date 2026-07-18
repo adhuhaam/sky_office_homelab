@@ -34,7 +34,7 @@ Until that consolidation is done, treat **`origin` / sky_office_homelab** as the
 
 ### Commit
 
-- Source under `leo-os/`, `leo-os-dotnet/`, `leo-android/`, `leo-sms-gateway/`
+- Source under `leo-os/`, `leo-os-dotnet/`, `leo-android/`
 - `docs/` (including ANDROID-APPS.md, SMS-GATEWAY.md), README, scripts, `docker-compose.yml`
 - nginx **configs** (not private key material if ignored)
 - Gradle project files (`*.kts`, wrapper properties)

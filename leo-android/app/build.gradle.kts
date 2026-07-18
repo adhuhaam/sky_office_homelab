@@ -7,15 +7,15 @@ plugins {
 }
 
 android {
-    namespace = "com.leo.admin"
+    namespace = "com.sky.office"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.leo.admin"
+        applicationId = "com.sky.office"
         minSdk = 26
         targetSdk = 34
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
     }
@@ -34,13 +34,22 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = "17" }
-    buildFeatures { compose = true }
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
     packaging {
-        resources { excludes += "/META-INF/{AL2.0,LGPL2.1}" }
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            excludes += "META-INF/INDEX.LIST"
+            excludes += "META-INF/io.netty.versions.properties"
+        }
     }
 }
 
 dependencies {
+    implementation(project(":feature-sms-gateway"))
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
@@ -55,26 +64,23 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.material)
 
-    // Hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.android.compiler)
     implementation(libs.hilt.navigation.compose)
+    implementation(libs.hilt.work)
+    ksp(libs.hilt.compiler)
 
-    // Network
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.gson)
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging)
     implementation(libs.gson)
 
-    // DataStore
     implementation(libs.androidx.datastore.preferences)
-
-    // Image loading
     implementation(libs.coil.compose)
-
-    // Coroutines
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.timber)
 
     debugImplementation(libs.androidx.ui.tooling)
 }

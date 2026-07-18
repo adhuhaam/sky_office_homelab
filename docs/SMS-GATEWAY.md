@@ -14,7 +14,7 @@ flowchart LR
   NS --> Q["sms_queue"]
   Q --> W["SmsDispatchWorker"]
   W --> Hub["SmsGatewayHub /hubs/sms-gateway"]
-  Hub --> App["leo-sms-gateway APK"]
+  Hub --> App["Sky Office APK\nSMS node mode"]
   App --> SIM["Dhiraagu / Ooredoo SIM"]
   App -->|"heartbeat / result"| API["/api/gateway/*"]
 ```
@@ -26,7 +26,7 @@ flowchart LR
 | Services | `LeoOs.Infrastructure/Notifications/` |
 | Hub | `LeoOs.Api/Hubs/SmsGatewayHub.cs` → `/hubs/sms-gateway` |
 | REST | `GatewayController` · `SmsController` |
-| Android app | `/home/adhuhaam/apps/leo-sms-gateway` · package `com.leo.smsgateway` |
+| Android app | **Sky Office** `/home/adhuhaam/apps/leo-android` · package `com.sky.office` · module `:feature-sms-gateway` |
 | Web ops | Superuser → **SMS Gateways** (`/sms-gateways`) |
 | Live status | Superuser → **About System** (`/about-system`) → SMS gateway card |
 
@@ -148,11 +148,12 @@ Nginx must upgrade WebSockets for `/hubs/` (`react/nginx/default.conf` + `infra/
 
 ## Configure a phone
 
-1. Build/install **leo-sms-gateway** (see [ANDROID-APPS.md](ANDROID-APPS.md)).
-2. Server URL: `http://100.126.222.96` (Tailscale) or `http://192.168.x.x` (LAN) — same APK.
-3. Register with a display name; save returned **gateway key**.
-4. Grant `SEND_SMS`, phone state, notifications; exempt from OEM battery killers (Xiaomi/Samsung).
-5. Foreground service keeps SignalR + ~30s heartbeat.
+1. Build/install **Sky Office** (`com.sky.office`) — see [ANDROID-APPS.md](ANDROID-APPS.md).
+2. Open **More → SMS gateway node** (or notification tap when already a node).
+3. Server URL: `http://100.126.222.96` (Tailscale) or `http://192.168.x.x` (LAN).
+4. Register with a display name; save returned **gateway key**.
+5. Grant `SEND_SMS`, phone state, notifications; exempt from OEM battery killers (Xiaomi/Samsung).
+6. Foreground service keeps SignalR + ~30s heartbeat.
 
 ---
 
@@ -172,5 +173,5 @@ Nginx must upgrade WebSockets for `/hubs/` (`react/nginx/default.conf` + `infra/
 | `sms_gateways` missing | Re-run SQL or recreate `leo-api-dotnet` after bootstrap fix |
 | Hub won’t connect | Check `/hubs/` Upgrade headers on proxy + cleartext URL |
 | Register works, never online | Permissions / OEM kill / SignalR URL typo |
-| Queued forever | No online gateway; open gateway app |
+| Queued forever | No online gateway; open Sky Office → SMS gateway node |
 | About SMS card empty / error | Ensure tables exist; hard-refresh PWA |

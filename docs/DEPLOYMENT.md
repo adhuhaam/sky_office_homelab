@@ -57,24 +57,20 @@ Runs `@leo/web` build (includes PWA asset generation) and rsyncs `apps/web/dist/
 
 Users may need a refresh / reinstall for service worker updates.
 
-## Deploy mobile / SMS gateway
+## Deploy Android (Sky Office)
 
-Not containerized. Prefer native Android Studio projects:
+Not containerized. One APK:
 
 | App | Path | Notes |
 |-----|------|-------|
-| Admin | `leo-android/` | Compose · set API base URL in Profile |
-| SMS gateway | `leo-sms-gateway/` | Register against Tailscale or LAN URL |
+| Sky Office | `leo-android/` | `com.sky.office` · office + SMS node · set API URL in Profile |
 
 ```bash
 # Open in Android Studio and Build → APK, or:
-cd /home/adhuhaam/apps/leo-android && ./gradlew assembleDebug
-cd /home/adhuhaam/apps/leo-sms-gateway && ./gradlew assembleDebug
+cd /home/adhuhaam/apps/leo-android && ./gradlew :app:assembleDebug
 ```
 
-Expo (`leo-os/apps/mobile`) is **retired from shipping** — keep for reference only. Do not ship new Expo APKs after native parity QA.
-
-See [SMS-GATEWAY.md](SMS-GATEWAY.md) for gateway ops.
+See [SMS-GATEWAY.md](SMS-GATEWAY.md) for gateway ops (More → SMS gateway node).
 
 ## Proxy / TLS
 

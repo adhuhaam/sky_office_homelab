@@ -1,28 +1,26 @@
-# Leo Admin (Android)
+# Sky Office (Android)
 
-Native Kotlin + Jetpack Compose field app. Replaces Expo `leo-os/apps/mobile`.
-
-Canonical docs: [docs/ANDROID-APPS.md](../docs/ANDROID-APPS.md) · [docs/SMS-GATEWAY.md](../docs/SMS-GATEWAY.md) · [PARITY-QA.md](PARITY-QA.md)
+**One master app** — office admin + optional SMS gateway node in a single APK.
 
 | Setting | Value |
 |---------|-------|
-| Package / applicationId | `com.leo.admin` |
-| UI | Compose + Material 3 |
-| DI | Hilt |
-| Network | Retrofit + OkHttp (cleartext for LAN/Tailscale) |
-| Session | Bearer from `/api/auth/mobile-token` (DataStore) |
-| Default API idea | `http://100.126.222.96` (set in Profile) |
+| App name | **Sky Office** |
+| Package / applicationId | `com.sky.office` |
+| Path | `leo-android/` (project folder name; product identity is Sky Office) |
+| UI | Kotlin + Jetpack Compose + Material 3 |
+| Modules | `:app` (shell + office) · `:feature-sms-gateway` (SIM relay) |
+| Session (office) | Bearer from `/api/auth/mobile-token` |
+| SMS node | Gateway key + SignalR `/hubs/sms-gateway` |
+| Default API | `http://100.126.222.96` (set in Profile) |
 
-## Screens (parity waves)
+Canonical docs: [docs/ANDROID-APPS.md](../docs/ANDROID-APPS.md) · [docs/SMS-GATEWAY.md](../docs/SMS-GATEWAY.md) · [PARITY-QA.md](PARITY-QA.md)
 
-| Wave | Features |
-|------|----------|
-| 0–1 | Login, session, dashboard, master list, passport detail |
-| 2 | Upload (multipart OCR), LOA list |
-| 3 | Companies, clients, passwords |
-| 4 | Billing, expenses, salary lists |
-| 5 | Admin users, profile (base URL + logout) |
-| 6 | Expo polish (QR / haptics) + parity QA |
+## Modes (one icon)
+
+| Mode | How to enter | Purpose |
+|------|----------------|---------|
+| **Office** | Login with staff credentials | Dashboard, Master, Upload, Billing, Expenses, Salary, More |
+| **SMS node** | More → **SMS gateway node** | Register SIM phone, foreground SignalR relay, local logs |
 
 ## Build on your PC
 
@@ -32,11 +30,7 @@ Homelab server does **not** build this app.
 git clone git@github.com:adhuhaam/sky_office_homelab.git
 # Android Studio → Open leo-android/
 # First sync may generate gradlew
-./gradlew assembleDebug
+./gradlew :app:assembleDebug
 ```
 
-APK: `app/build/outputs/apk/debug/app-debug.apk`
-
-## Do not confuse with SMS gateway
-
-`leo-sms-gateway` (`com.leo.smsgateway`) is a separate APK for SIM relays.
+APK: `app/build/outputs/apk/debug/app-debug.apk` · package `com.sky.office`

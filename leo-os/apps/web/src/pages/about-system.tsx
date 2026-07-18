@@ -469,13 +469,13 @@ export function AboutSystemPage() {
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <Smartphone className="h-4 w-4 text-muted-foreground" />
-                  <CardTitle className="text-base">Android admin</CardTitle>
+                  <CardTitle className="text-base">Sky Office</CardTitle>
                 </div>
                 <StatusPill status={data.androidClients.admin.status} />
               </div>
               <CardDescription>
-                Native Compose app (<code className="font-mono text-xs">leo-android</code>) —
-                build locally from git
+                Android app (<code className="font-mono text-xs">com.sky.office</code>) —
+                build locally from <code className="font-mono text-xs">leo-android/</code>
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -510,7 +510,7 @@ export function AboutSystemPage() {
                 <StatusPill status={data.androidClients.smsGateway.status} />
               </div>
               <CardDescription>
-                SIM relays via SignalR · package{" "}
+                Sky Office SMS node mode · SignalR · package{" "}
                 <code className="font-mono text-xs">{data.androidClients.smsGateway.packageId}</code>
               </CardDescription>
             </CardHeader>

@@ -9,16 +9,14 @@ It covers the full worker lifecycle:
 1. **Onboarding** — AI passport OCR → employee record → Letter of Appointment (LOA)
 2. **Operations** — master employee list, company/client allocation, Xpat work-permit monitoring
 3. **Finance** — monthly salary roster, client invoices/quotations, expense vouchers
-4. **Access** — role-based web PWA for office staff + native Android admin for field use (Expo kept as reference until parity QA)
+4. **Access** — role-based web PWA for office staff + Sky Office Android for field use / SMS nodes
 
 ## Product surfaces
 
 | Surface | Package | Tech | Who uses it |
 |---------|---------|------|-------------|
 | Web admin (PWA) | `@leo/web` | React 19, Vite, shadcn/ui, TanStack Query, wouter | Admins, office staff |
-| Mobile admin | `leo-android` | Kotlin · Jetpack Compose · Hilt | Field / on-the-go staff |
-| SMS gateway | `leo-sms-gateway` | Compose · SignalR · foreground service | Ops SIM phones |
-| Mobile (Expo) | `@leo/mobile` | Expo 54 (legacy reference) | Do not ship new APKs |
+| Sky Office (Android) | `leo-android` · `com.sky.office` | Kotlin · Jetpack Compose · Hilt · `:feature-sms-gateway` | Field staff + SIM SMS phones |
 | REST API | `leo-os-dotnet` | ASP.NET Core 8, EF Core, SignalR, sessions | All clients |
 | Database | PostgreSQL 17 | Docker `postgres` | API only |
 
@@ -51,10 +49,9 @@ It covers the full worker lifecycle:
 ```
 /home/adhuhaam/apps/          ← homelab deployment root (this repo)
 ├── docker-compose.yml        ← production stack
-├── leo-os/                   ← React PWA + Expo reference
+├── leo-os/                   ← React PWA monorepo
 ├── leo-os-dotnet/            ← primary ASP.NET Core API (+ SMS/Notification)
-├── leo-android/              ← native admin (Compose)
-├── leo-sms-gateway/          ← Android SIM SMS gateway
+├── leo-android/              ← Sky Office (Compose · office + SMS node)
 ├── react/app/                ← built web static files
 ├── api/.env                  ← API secrets (server only)
 ├── infra/                    ← nginx + TLS certs

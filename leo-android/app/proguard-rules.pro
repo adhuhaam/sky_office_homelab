@@ -1,4 +1,4 @@
--keep class com.leo.admin.data.model.** { *; }
+-keep class com.sky.office.data.model.** { *; }
 -keepattributes Signature
 -keepattributes *Annotation*
 -keep class retrofit2.** { *; }

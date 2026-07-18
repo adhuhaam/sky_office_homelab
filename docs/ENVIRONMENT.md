@@ -42,13 +42,9 @@ Credentials for the `postgres` container (`POSTGRES_USER` / password). Must alig
 
 Compose also sets `POSTGRES_DB` / `POSTGRES_USER` in `docker-compose.yml` — ensure they match how `DATABASE_URL` is written.
 
-## Mobile
+## Android (Sky Office)
 
-| Variable | Purpose |
-|----------|---------|
-| `EXPO_PUBLIC_API_URL` | API origin without path, e.g. `http://100.126.222.96` |
-
-Baked in at Metro/EAS build time — rebuild after changes.
+API base URL is set in-app under **Profile** (default idea: `http://100.126.222.96`). No build-time env var — cleartext HTTP is enabled for LAN/Tailscale.
 
 ## CORS example (production)
 

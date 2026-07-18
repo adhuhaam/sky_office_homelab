@@ -30,7 +30,7 @@ flowchart TD
 
 ### Mobile
 
-1. Native **leo-android** Upload (Expo reference until parity) → camera / gallery / PDF
+1. **Sky Office** (`leo-android`) Upload → camera / gallery / PDF
 2. Extract → assign company
 3. Save to master list → PATCH company + POST LOA
 
@@ -93,7 +93,7 @@ Math: `leo-os-dotnet/LeoOs.Infrastructure/Services/Money.cs`.
 
 1. Feature calls `INotificationService.SendSms*` → `sms_queue`
 2. `SmsDispatchWorker` claims Pending → SignalR `SendSms` to an online gateway
-3. `leo-sms-gateway` sends SIM SMS → `SmsCompleted` / `SmsFailed`
+3. Sky Office SMS node sends SIM SMS → `SmsCompleted` / `SmsFailed`
 4. Ops visibility: `/sms-gateways`, About System SMS card, `sms_logs`
 
 Product hooks today: LOA create (`LoaCreated`), permit alerts (`PermitExpiring`). Details: [SMS-GATEWAY.md](SMS-GATEWAY.md).

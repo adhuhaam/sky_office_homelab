@@ -7,9 +7,7 @@
     "preinstall": "sh -c 'case \"$npm_config_user_agent\" in pnpm/*) ;; *) echo \"Use pnpm instead\" >&2; exit 1 ;; esac'",
     "build": "pnpm -r --if-present run build",
     "typecheck": "pnpm -r --if-present run typecheck",
-    "deploy:web": "pnpm --filter @leo/web run build && rsync -a --delete apps/web/dist/ /home/adhuhaam/apps/react/app/",
-    "mobile:dev": "pnpm --filter @leo/mobile run dev",
-    "mobile:build:android": "pnpm --filter @leo/mobile run build:android"
+    "deploy:web": "pnpm --filter @leo/web run build && rsync -a --delete apps/web/dist/ /home/adhuhaam/apps/react/app/"
   },
   "devDependencies": {
     "typescript": "~5.9.2"
