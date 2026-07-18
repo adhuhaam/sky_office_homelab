@@ -18,17 +18,22 @@ public sealed class BillingController : ControllerBase
     public BillingController(LeoOsDbContext db) => _db = db;
 
     public sealed record ItemBody(
-        string Description, string? Detail,
-        string? Qty, string? Rate
+        string? Description, string? Detail,
+        // Web may send numbers (from GET decimals) or strings — accept both.
+        object? Qty, object? Rate
     );
 
+    /// <summary>
+    /// Shared create/update body. All fields optional so PATCH can send
+    /// status-only updates or full form saves without <c>kind</c> (web omits it on edit).
+    /// </summary>
     public sealed record DocumentBody(
-        string Kind,
+        string? Kind,
         int? CompanyId, int? ClientId,
-        string CustomerName, string? CustomerAddress, string? CustomerTin,
-        string IssueDate, string? DueDate, string? Terms,
-        string? GstRate, bool? GstInclusive, string? Notes, string? Status,
-        List<ItemBody> Items,
+        string? CustomerName, string? CustomerAddress, string? CustomerTin,
+        string? IssueDate, string? DueDate, string? Terms,
+        object? GstRate, bool? GstInclusive, string? Notes, string? Status,
+        List<ItemBody>? Items,
         List<int>? LinkedSalaryIds
     );
 
@@ -107,15 +112,23 @@ public sealed class BillingController : ControllerBase
 
         if (doc is null) return null;
 
-        var items = await _db.BillingItems.AsNoTracking()
+        var itemRows = await _db.BillingItems.AsNoTracking()
             .Where(i => i.DocumentId == id)
             .OrderBy(i => i.Position)
             .ToListAsync(ct);
 
+        var items = itemRows.Select(i => new
+        {
+            i.Id, i.DocumentId, i.Position, i.Description, i.Detail,
+            qty = i.Qty.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture),
+            rate = i.Rate.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture),
+            amount = i.Amount.ToString("F2", System.Globalization.CultureInfo.InvariantCulture),
+        }).ToList();
+
         var settings = await _db.AppSettings.AsNoTracking()
             .FirstOrDefaultAsync(s => s.Id == 1, ct);
 
-        var subtotal = items.Sum(i => i.Amount);
+        var subtotal = itemRows.Sum(i => i.Amount);
         var gstRate = doc.GstRate;
         var grand = doc.GstInclusive
             ? subtotal
@@ -138,7 +151,8 @@ public sealed class BillingController : ControllerBase
             doc.ClientId, doc.clientName,
             doc.CustomerName, doc.CustomerAddress, doc.CustomerTin,
             doc.IssueDate, doc.DueDate, doc.Terms,
-            doc.GstRate, doc.GstInclusive, doc.Notes, doc.Status,
+            gstRate = doc.GstRate.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture),
+            doc.GstInclusive, doc.Notes, doc.Status,
             doc.CreatedAt, doc.UpdatedAt,
             items,
             subtotal = subtotal.ToString("F2"),
@@ -329,6 +343,9 @@ public sealed class BillingController : ControllerBase
             return BadRequest(new { error = "At least one item is required" });
         if (string.IsNullOrWhiteSpace(body.CustomerName))
             return BadRequest(new { error = "customerName is required" });
+        var kind = (body.Kind ?? "").Trim().ToLowerInvariant();
+        if (kind is not ("invoice" or "quotation"))
+            return BadRequest(new { error = "kind must be invoice or quotation" });
 
         var issueDate = Money.NormalizeDate(body.IssueDate);
         if (issueDate is null or "invalid") return BadRequest(new { error = "Invalid issue date" });
@@ -337,14 +354,14 @@ public sealed class BillingController : ControllerBase
         var gstRate = Money.NormalizeMoney(body.GstRate ?? "0", 2, 3) ?? "0.00";
 
         var companyId = body.CompanyId ?? await GetOrCreateIssuerIdAsync(ct);
-        var number = await AllocateNumberAsync(body.Kind, ct);
+        var number = await AllocateNumberAsync(kind, ct);
 
         var doc = new BillingDocument
         {
-            Kind = body.Kind,
+            Kind = kind,
             Number = number,
             CompanyId = companyId,
-            ClientId = body.ClientId,
+            ClientId = body.ClientId is null or 0 ? null : body.ClientId,
             CustomerName = body.CustomerName.Trim(),
             CustomerAddress = body.CustomerAddress,
             CustomerTin = body.CustomerTin,
@@ -362,6 +379,8 @@ public sealed class BillingController : ControllerBase
         for (int i = 0; i < body.Items.Count; i++)
         {
             var item = body.Items[i];
+            if (string.IsNullOrWhiteSpace(item.Description))
+                return BadRequest(new { error = "Each item needs a description" });
             var qty = decimal.Parse(Money.NormalizeMoney(item.Qty ?? "1", 4, 10) ?? "1.0000");
             var rate = decimal.Parse(Money.NormalizeMoney(item.Rate ?? "0", 4, 10) ?? "0.0000");
             _db.BillingItems.Add(new BillingItem
@@ -395,10 +414,17 @@ public sealed class BillingController : ControllerBase
         var doc = await _db.BillingDocuments.FirstOrDefaultAsync(d => d.Id == id, ct);
         if (doc is null) return NotFound(new { error = "Not found" });
 
+        // Full form save (web always sends items) vs status-only PATCH from list page.
+        var isFullSave = body.Items is { Count: > 0 };
+
         if (body.CustomerName is not null) doc.CustomerName = body.CustomerName.Trim();
         if (body.CustomerAddress is not null) doc.CustomerAddress = body.CustomerAddress;
         if (body.CustomerTin is not null) doc.CustomerTin = body.CustomerTin;
-        if (body.ClientId.HasValue) doc.ClientId = body.ClientId.Value == 0 ? null : body.ClientId;
+        // Full save always applies clientId (null = custom / clear). Status-only leaves it alone.
+        if (isFullSave)
+            doc.ClientId = body.ClientId is null or 0 ? null : body.ClientId;
+        else if (body.ClientId.HasValue)
+            doc.ClientId = body.ClientId.Value == 0 ? null : body.ClientId;
         if (body.Terms is not null) doc.Terms = body.Terms;
         if (body.Notes is not null) doc.Notes = body.Notes;
         if (body.Status is not null)
@@ -426,13 +452,15 @@ public sealed class BillingController : ControllerBase
             doc.DueDate = d is null ? null : DateOnly.Parse(d);
         }
 
-        if (body.Items is { Count: > 0 })
+        if (isFullSave)
         {
             var existing = await _db.BillingItems.Where(i => i.DocumentId == id).ToListAsync(ct);
             _db.BillingItems.RemoveRange(existing);
-            for (int i = 0; i < body.Items.Count; i++)
+            for (int i = 0; i < body.Items!.Count; i++)
             {
                 var item = body.Items[i];
+                if (string.IsNullOrWhiteSpace(item.Description))
+                    return BadRequest(new { error = "Each item needs a description" });
                 var qty = decimal.Parse(Money.NormalizeMoney(item.Qty ?? "1", 4, 10) ?? "1.0000");
                 var rate = decimal.Parse(Money.NormalizeMoney(item.Rate ?? "0", 4, 10) ?? "0.0000");
                 _db.BillingItems.Add(new BillingItem

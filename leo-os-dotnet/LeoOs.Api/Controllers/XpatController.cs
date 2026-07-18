@@ -24,11 +24,13 @@ public sealed class XpatController : ControllerBase
         _logger = logger;
     }
 
-    private HttpClient CreateXpatClient(string accept)
+    private HttpClient CreateXpatClient(params string[] accepts)
     {
         var http = _httpFactory.CreateClient();
         http.DefaultRequestHeaders.Add("ApiKey", XpatApiKey);
-        http.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue(accept));
+        // MediaTypeWithQualityHeaderValue only accepts a single type — not "image/jpeg,image/*".
+        foreach (var accept in accepts)
+            http.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue(accept));
         return http;
     }
 
@@ -62,7 +64,7 @@ public sealed class XpatController : ControllerBase
             || !IdRe.IsMatch(photoId) || !IdRe.IsMatch(serviceId))
             return BadRequest(new { error = "photoId and serviceId are required" });
 
-        var http = CreateXpatClient("image/jpeg,image/*");
+        var http = CreateXpatClient("image/jpeg", "image/*");
         var url = $"{XpatBase}/WorkPermit/GetImage?photoId={Uri.EscapeDataString(photoId)}" +
                   $"&serviceId={Uri.EscapeDataString(serviceId)}";
 
@@ -85,7 +87,7 @@ public sealed class XpatController : ControllerBase
         if (string.IsNullOrWhiteSpace(workPermitNumber) || string.IsNullOrWhiteSpace(passportNumber))
             return BadRequest(new { error = "workPermitNumber and passportNumber are required" });
 
-        var http = CreateXpatClient("image/png,image/*");
+        var http = CreateXpatClient("image/png", "image/*");
         var url = $"{XpatBase}/WorkPermitCard/GetWorkPermitCard" +
                   $"?WorkPermitNumber={Uri.EscapeDataString(workPermitNumber.Trim())}" +
                   $"&PassportNumber={Uri.EscapeDataString(passportNumber.Trim())}";
